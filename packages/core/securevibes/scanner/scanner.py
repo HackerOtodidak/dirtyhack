@@ -21,7 +21,7 @@ from securevibes.agents.definitions import create_agent_definitions
 from securevibes.models.result import ScanResult
 from securevibes.models.issue import SecurityIssue, Severity
 from securevibes.prompts.loader import load_prompt
-from securevibes.config import config, LanguageConfig, ScanConfig
+from securevibes.config import config, LanguageConfig, ScanConfig, DASTConfig
 from securevibes.scanner.subagent_manager import SubAgentManager, ScanMode
 from securevibes.scanner.hooks import (
     create_dast_security_hook,
@@ -613,6 +613,18 @@ class Scanner:
         # - Skills are discovered from {repo}/.claude/skills/ when settings are enabled
         # - The DAST agent has "Skill" in its tools to access loaded skills
 
+        # Sandbox configuration for DAST phase
+        # Provides OS-level isolation when DAST validation is part of the scan
+        # Only affects Bash command execution (other agents don't use Bash)
+        sandbox_settings = None
+        if needs_dast:
+            sandbox_settings = DASTConfig.get_sandbox_settings()
+            if sandbox_settings and self.debug:
+                self.console.print(
+                    "  🔒 DAST sandbox enabled: OS-level command isolation active",
+                    style="dim cyan"
+                )
+
         options = ClaudeAgentOptions(
             agents=agents,
             cwd=str(repo),
@@ -627,6 +639,11 @@ class Scanner:
             max_turns=config.get_max_turns(),
             permission_mode='bypassPermissions',
             model=self.model,
+            
+            # Sandbox for DAST phase: OS-level isolation for Bash commands
+            # This provides defense-in-depth alongside hook-based security
+            sandbox=sandbox_settings,
+            
             hooks={
                 "PreToolUse": [
                     HookMatcher(hooks=[dast_security_hook]),  # DAST security - blocks database tools
