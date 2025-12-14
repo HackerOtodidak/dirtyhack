@@ -1,0 +1,83 @@
+# CORS Misconfiguration Test Origins
+# Replace {target} with target domain (e.g., example.com)
+# Usage: curl -H "Origin: <payload>" -I "$TARGET/api/endpoint"
+# Check: Access-Control-Allow-Origin and Access-Control-Allow-Credentials headers
+
+# Null origin (sandbox/data URI bypass)
+null
+
+# Direct reflection test
+https://{target}
+http://{target}
+
+# Subdomain variations
+https://evil.{target}
+https://test.{target}
+https://anything.{target}
+https://subdomain.{target}
+http://evil.{target}
+
+# Suffix bypass (weak regex)
+https://{target}.evil.com
+https://{target}evil.com
+https://evil{target}.com
+https://prefix{target}.com
+http://{target}.attacker.com
+
+# Prefix bypass
+https://evil-{target}
+https://evil.com.{target}
+https://attacker.com?.{target}
+https://attacker.com#{target}
+https://attacker.com/{target}
+https://attacker.com%{target}
+
+# Special character bypass
+https://{target}@attacker.com
+https://attacker.com\{target}
+https://attacker.com%00{target}
+https://attacker%2e{target}
+https://attacker.com%0d%0a{target}
+
+# Wildcard test
+*.{target}
+
+# Protocol downgrade
+http://{target}
+
+# Port variations
+https://{target}:443
+https://{target}:8443
+http://{target}:80
+http://{target}:8080
+
+# Case sensitivity
+https://{TARGET}
+https://{Target}
+
+# Localhost/internal
+http://localhost
+http://127.0.0.1
+http://[::1]
+http://localhost.{target}
+
+# File protocol
+file://
+
+# Special schemes
+chrome-extension://id
+moz-extension://id
+
+# Unicode/Punycode
+https://xn--{target}
+https://{target}%E3%80%82evil.com
+
+# Double encoding
+https://attacker.com%252f{target}
+
+# Backslash (browser normalization)
+https://attacker.com\@{target}
+
+# Comment/fragment
+https://attacker.com#.{target}
+https://attacker.com?.{target}

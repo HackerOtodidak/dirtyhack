@@ -1,0 +1,98 @@
+# CSRF Token Bypass Values
+# Use these values to test CSRF token validation
+# Replace {valid_token} with a captured valid token if available
+
+# Empty/null values (test if token is required)
+
+null
+undefined
+0
+false
+true
+none
+nil
+empty
+blank
+
+# Whitespace variations
+
+
+
+
+# Special strings
+{}
+[]
+""
+''
+NaN
+Infinity
+
+# Token manipulation (if valid token known)
+# Prefix/suffix modification
+{valid_token}1
+1{valid_token}
+{valid_token}a
+a{valid_token}
+
+# Truncation (test minimum length)
+a
+aa
+aaa
+aaaa
+aaaaaaaa
+aaaaaaaaaaaaaaaa
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+
+# Maximum length overflow
+# (generate 1000+ char string)
+
+# Different encoding of same token
+# URL encode: %XX format
+# Base64 encode/decode
+# Double URL encode
+
+# Case modification (if case-insensitive)
+{VALID_TOKEN}
+{Valid_Token}
+
+# Other user's token
+# (use token from different session)
+
+# Expired/old token
+# (use previously valid token)
+
+# Predictable patterns
+1
+12345678
+00000000-0000-0000-0000-000000000000
+ffffffff-ffff-ffff-ffff-ffffffffffff
+test
+token
+csrf
+csrftoken
+
+# Content-Type bypass (send as different type)
+# application/x-www-form-urlencoded
+# application/json
+# multipart/form-data
+# text/plain
+
+# Method override (change POST to GET)
+# GET may not require CSRF token
+
+# Parameter pollution
+# csrf_token=valid&csrf_token=invalid
+# csrf_token[]=valid
+
+# Remove parameter entirely
+# (omit csrf_token from request)
+
+# Different parameter name
+# _token
+# _csrf
+# csrf-token
+# csrfmiddlewaretoken
+# authenticity_token
+# __RequestVerificationToken
+# X-CSRF-TOKEN (as header)
+# X-XSRF-TOKEN (as header)

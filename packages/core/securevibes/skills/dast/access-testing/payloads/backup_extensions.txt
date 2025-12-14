@@ -1,0 +1,134 @@
+# Backup File Extensions
+# Append these to known file paths to find backup copies
+# Usage: for ext in $(cat backup_extensions.txt); do curl "$TARGET/config.php$ext"; done
+# Source: crimson BCK_EXT wordlist + additional common extensions
+
+# Underscore/tilde patterns
+_
+~
+~~
+.~
+_backup
+_bak
+_old
+
+# Common backup extensions
+.7z
+.bac
+.backup
+.bak
+-bak
+.bck
+.bk
+.bkp
+.bkup
+
+# Archive formats
+.rar
+.tar
+.tar.bz2
+.tar.gz
+.tbz2
+.tgz
+.zip
+.gz
+.bz2
+
+# Configuration/log
+.conf
+.config
+.cfg
+.ini
+.log
+.env
+.env.backup
+.env.local
+.env.production
+.env.development
+
+# Editor swap/temp files
+.swo
+.swp
+.swn
+.swm
+~$
+.tmp
+.temp
+.cache
+
+# Version control artifacts
+.orig
+.original
+.old
+_old
+.prev
+.previous
+.copy
+.copy1
+.1
+.2
+
+# Save files
+.sav
+.save
+.saved
+
+# Database
+.sql
+.sql.bak
+.sql.gz
+.db
+.sqlite
+.sqlite3
+.dump
+
+# Source code
+.txt
+.tpl
+.inc
+.include
+.src
+.source
+.dist
+.default
+.sample
+.example
+
+# Date-based patterns (use with file basename)
+.20231201
+.2023-12-01
+_20231201
+-backup-2023
+
+# Numeric suffixes
+.0
+.1
+.2
+.3
+.4
+.5
+
+# Double extensions
+.php.bak
+.asp.bak
+.aspx.bak
+.js.bak
+.html.bak
+.htm.bak
+.xml.bak
+.json.bak
+.yaml.bak
+.yml.bak
+
+# OS-specific
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Version suffixes
+.v1
+.v2
+.ver1
+.version1
+_v1
+_v2

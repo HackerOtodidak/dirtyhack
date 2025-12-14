@@ -1,6 +1,6 @@
 ---
 name: authorization-testing
-description: Validate authorization failures including IDOR, privilege escalation, and missing access controls. Test by attempting unauthorized access with lower-privileged credentials. Use when testing CWE-639 (IDOR), CWE-269 (Privilege Escalation), CWE-862 (Missing Authorization), CWE-863 (Incorrect Authorization), CWE-284 (Access Control), CWE-285 (Improper Authorization), or CWE-425 (Direct Request/Forced Browsing) findings.
+description: Validate authorization failures including IDOR, privilege escalation, missing access controls, mass assignment, and 403/401 bypasses. Test by attempting unauthorized access with lower-privileged credentials. Use when testing CWE-639 (IDOR), CWE-269 (Privilege Escalation), CWE-862 (Missing Authorization), CWE-863 (Incorrect Authorization), CWE-284 (Access Control), CWE-285 (Improper Authorization), CWE-425 (Direct Request/Forced Browsing), or CWE-915 (Mass Assignment) findings.
 allowed-tools: Read, Write, Bash
 ---
 
@@ -62,6 +62,39 @@ Access restricted functionality by directly requesting URLs, bypassing normal na
 - Direct access to `/admin/dashboard` without admin session
 - Force-browsing to `/api/internal/config` endpoint
 - Accessing `/reports/confidential` by guessing URL structure
+
+### 7. Mass Assignment / Object Injection (CWE-915)
+Escalate privileges by injecting additional parameters into user registration/update requests.
+
+**Test Pattern:** Add `admin=true` or `role=admin` to request body
+**Expected:** Parameters ignored | **Actual if vulnerable:** 200 OK with elevated privileges
+**CLI Test:**
+```bash
+curl -X POST "$TARGET/api/user/register" -H "Content-Type: application/json" \
+  -d '{"username":"test","password":"test123","role":"admin"}'
+```
+**Reference:** See `reference/mass_assignment.py` and `payloads/mass_assignment_params.txt`
+
+### 8. 403/401 Bypass Techniques
+Access restricted endpoints by manipulating paths, headers, or HTTP methods.
+
+**Test Pattern:** Apply path/header manipulations to endpoints returning 403/401
+**Expected:** Still 403/401 | **Actual if vulnerable:** 200 OK
+**CLI Tests:**
+```bash
+# Path manipulation
+curl "$TARGET/%2e/admin"
+curl "$TARGET/admin..;/"
+curl "$TARGET/admin/.."
+
+# Header injection
+curl "$TARGET/" -H "X-Original-URL: /admin"
+curl "$TARGET/admin" -H "X-Forwarded-For: 127.0.0.1"
+
+# Method override
+curl -X POST "$TARGET/admin" -H "X-HTTP-Method-Override: GET"
+```
+**Reference:** See `reference/bypass_403.py`, `payloads/403_bypass.txt`, and `payloads/403_bypass_headers.txt`
 
 ## Prerequisites
 - Target application running and reachable
@@ -396,6 +429,9 @@ This skill validates:
 - **CWE-284:** Improper Access Control (parent category)
 - **CWE-285:** Improper Authorization
 - **CWE-425:** Direct Request / Forced Browsing
+- **CWE-915:** Mass Assignment / Improperly Controlled Modification of Dynamically-Determined Object Attributes
+
+**Note:** For cross-site attacks (CSRF, CORS) and information disclosure (backup files, hardcoded credentials, directory listing), see the **access-testing** skill.
 
 ## Safety Rules
 
@@ -428,7 +464,11 @@ For comprehensive vulnerability-specific examples with code and evidence, see `e
 - **Vertical Privilege Escalation**: Role self-modification, admin function access
 - **Missing Authorization**: Unauthenticated admin endpoints
 - **Forced Browsing**: Direct URL access to protected resources
-- **Test Result Types**: FALSE_POSITIVE, UNVALIDATED scenarios
+- **Mass Assignment**: Privilege escalation via parameter injection
+- **403/401 Bypass**: Path manipulation, header injection, method override
+- **Test Result Types**: FALSE_POSITIVE, UNVALIDATED, PARTIAL scenarios
+
+**Note:** For CSRF, CORS, and information disclosure examples, see the **access-testing** skill.
 
 ### Quick Reference Examples
 
@@ -449,9 +489,22 @@ Classification: VALIDATED (CWE-269)
 See `reference/` directory for implementation examples:
 - **`auth_patterns.py`**: Reusable authentication functions (session, JWT, API key, OAuth2, Basic)
 - **`validate_idor.py`**: Complete authorization testing script with redaction and classification
+- **`bypass_403.py`**: 403/401 bypass testing via path manipulation, headers, and method overrides
+- **`mass_assignment.py`**: Mass assignment / object injection privilege escalation testing
 - **`README.md`**: Usage guidance and adaptation notes
 
 These are reference implementations to adapt — not drop-in scripts. Each application requires tailored logic.
+
+**Note:** For CORS and CSRF testing scripts, see the **access-testing** skill.
+
+## Payload Files
+
+See `payloads/` directory for test wordlists:
+- **`403_bypass.txt`**: Path manipulation payloads for 403/401 bypass
+- **`403_bypass_headers.txt`**: Header injection payloads for access control bypass
+- **`mass_assignment_params.txt`**: Common privilege escalation parameters
+
+**Note:** For CORS, CSRF, backup, and referer bypass payloads, see the **access-testing** skill.
 
 ### Additional Resources
 

