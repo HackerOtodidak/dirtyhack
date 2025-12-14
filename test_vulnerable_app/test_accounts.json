@@ -1,0 +1,25 @@
+{
+  "accounts": [
+    {
+      "role": "user",
+      "username": "alice",
+      "password": "alice123",
+      "user_id": "1",
+      "description": "Regular user account for horizontal escalation testing"
+    },
+    {
+      "role": "user",
+      "username": "bob",
+      "password": "bob456",
+      "user_id": "2",
+      "description": "Second regular user for IDOR/horizontal privilege testing"
+    },
+    {
+      "role": "admin",
+      "username": "admin",
+      "password": "admin789",
+      "user_id": "3",
+      "description": "Admin account for vertical escalation testing"
+    }
+  ]
+}

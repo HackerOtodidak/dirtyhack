@@ -66,6 +66,12 @@ scan_output.log
 
 # SecureVibes scan artifacts
 .securevibes/
+.claude/
+
+# Test vulnerable app artifacts
+test_vulnerable_app/.securevibes/
+test_vulnerable_app/.claude/
+test_vulnerable_app/venv/
 
 # Python type checking & linting
 .mypy_cache/
@@ -84,3 +90,7 @@ scan_output.log
 settings.local.json
 
 youtube-scripts/
+
+# Local artifacts and fixtures
+.backup/
+test-cases/
