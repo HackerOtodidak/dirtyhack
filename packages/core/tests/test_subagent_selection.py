@@ -238,61 +238,56 @@ def test_dast_flag_help_text_updated(runner, tmp_path):
     assert "full scan" in result.output.lower()
 
 
-@patch('asyncio.run')
-@patch('securevibes.cli.main.Scanner')
-def test_run_scan_calls_scan_subagent(mock_scanner_class, mock_asyncio_run, runner, tmp_path):
+@pytest.mark.asyncio
+async def test_run_scan_calls_scan_subagent(mock_scanner, tmp_path):
     """Test _run_scan routes to scan_subagent"""
-    mock_scanner = Mock()
-    mock_scanner.configure_dast = Mock()
-    mock_scanner.scan_subagent = AsyncMock()
-    mock_scanner_class.return_value = mock_scanner
+    from securevibes.cli.main import _run_scan
     
-    # Mock the result
-    mock_result = Mock()
-    mock_result.issues = []
-    mock_result.files_scanned = 1
-    mock_result.critical_count = 0
-    mock_result.high_count = 0
-    mock_result.medium_count = 0
-    mock_result.low_count = 0
-    mock_asyncio_run.return_value = mock_result
+    await _run_scan(
+        path=str(tmp_path),
+        model="sonnet",
+        save_results=True,
+        quiet=False,
+        debug=False,
+        dast=False,
+        target_url=None,
+        dast_timeout=120,
+        dast_accounts=None,
+        subagent='assessment',
+        resume_from=None,
+        force=False,
+        skip_checks=False
+    )
     
-    result = runner.invoke(cli, [
-        'scan', str(tmp_path),
-        '--subagent', 'assessment',
-        '--format', 'table'
-    ])
-    
-    # Verify asyncio.run was called (which calls _run_scan)
-    assert mock_asyncio_run.called
+    mock_scanner.scan_subagent.assert_awaited_once_with(
+        str(tmp_path.resolve()), 'assessment', False, False
+    )
 
 
-@patch('asyncio.run')
-@patch('securevibes.cli.main.Scanner')
-def test_run_scan_calls_scan_resume(mock_scanner_class, mock_asyncio_run, runner, tmp_path):
+@pytest.mark.asyncio
+async def test_run_scan_calls_scan_resume(mock_scanner, tmp_path):
     """Test _run_scan routes to scan_resume"""
-    mock_scanner = Mock()
-    mock_scanner.configure_dast = Mock()
-    mock_scanner.scan_resume = AsyncMock()
-    mock_scanner_class.return_value = mock_scanner
+    from securevibes.cli.main import _run_scan
     
-    # Mock the result
-    mock_result = Mock()
-    mock_result.issues = []
-    mock_result.files_scanned = 1
-    mock_result.critical_count = 0
-    mock_result.high_count = 0
-    mock_result.medium_count = 0
-    mock_result.low_count = 0
-    mock_asyncio_run.return_value = mock_result
+    await _run_scan(
+        path=str(tmp_path),
+        model="sonnet",
+        save_results=True,
+        quiet=False,
+        debug=False,
+        dast=False,
+        target_url=None,
+        dast_timeout=120,
+        dast_accounts=None,
+        subagent=None,
+        resume_from='threat-modeling',
+        force=False,
+        skip_checks=False
+    )
     
-    result = runner.invoke(cli, [
-        'scan', str(tmp_path),
-        '--resume-from', 'threat-modeling',
-        '--format', 'table'
-    ])
-    
-    assert mock_asyncio_run.called
+    mock_scanner.scan_resume.assert_awaited_once_with(
+        str(tmp_path.resolve()), 'threat-modeling', False, False
+    )
 
 
 def test_invalid_subagent_rejected(runner, tmp_path):

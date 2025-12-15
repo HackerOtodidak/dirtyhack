@@ -1,6 +1,6 @@
 # SecureVibes Agent Guidelines
 
-This file defines coding standards, workflows, and conventions for AI assistants (Droid/Claude) working on SecureVibes. Factory automatically reads this file to ensure consistent, high-quality results.
+This file defines coding standards, workflows, and conventions for AI assistants / AI agents (Droid/Claude/Codex) working on SecureVibes. AI agent automatically reads this file to ensure consistent, high-quality results.
 
 ---
 
@@ -10,7 +10,7 @@ This file defines coding standards, workflows, and conventions for AI assistants
 
 **STOP POINT: After `git add` + commit message suggestion**
 
-When making changes, Droid should:
+When making changes, AI agent should:
 1. ✅ Make changes (create, edit, delete files)
 2. ✅ Stage changes with `git add <files>`
 3. ✅ Generate a commit message following repository style (check `git log --oneline -10`)
@@ -23,14 +23,14 @@ When making changes, Droid should:
 - Execute or modify the suggested commit command
 - Push manually when ready
 
-**Droid should NEVER:**
+**AI agent should NEVER:**
 - ❌ Run `git commit` (unless explicitly requested)
 - ❌ Run `git push` (unless explicitly requested)
 - ❌ Commit without showing what's staged first
 
 **Example:**
 ```bash
-# Droid does:
+# AI agent does:
 git add packages/core/securevibes/scanner.py tests/test_scanner.py
 
 # Then outputs:
@@ -46,30 +46,30 @@ Review with 'git status' or 'git diff --cached' if needed."
 
 ## Security Analysis Workflow
 
-### Code Generation with Corridor
+### Code Generation with Codex
 
 **CRITICAL: Before generating any code:**
 
 1. ✅ **Generate a plan** - Always create a detailed plan before writing code
-2. ✅ **Use Corridor tool** - ALWAYS analyze the plan using Corridor's MCP Server
-3. ✅ **Review analysis** - Consider Corridor's security recommendations
+2. ✅ **Use Codex tool** - ALWAYS analyze the plan using Codex's available tools and features
+3. ✅ **Review analysis** - Consider Codex's security recommendations
 4. ✅ **Generate code** - Implement with security best practices
 
-**Corridor Integration:**
-- Use the `corridor___Corridor` tool to analyze implementation plans
+**Codex Integration:**
+- Use the codex tool to analyze implementation plans
 - Provide context about the feature type (e.g., "API endpoint", "authentication", "file upload")
-- Review Corridor's security guidance before proceeding with implementation
+- Review Codex's security guidance before proceeding with implementation
 - Apply recommended security patterns and vulnerability prevention
 
 **Example workflow:**
 ```
-User request → Generate plan → Corridor analysis → Review feedback → Generate code → Test
+User request → Generate plan → Codex analysis → Review feedback → Generate code → Test
 ```
 
 **Never:**
 - ❌ Generate code without a plan
-- ❌ Skip Corridor analysis for "simple" changes
-- ❌ Ignore security recommendations from Corridor
+- ❌ Skip Codex analysis for "simple" changes
+- ❌ Ignore security recommendations from Codex
 
 ---
 

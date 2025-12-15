@@ -2,6 +2,9 @@
 
 **AI-Native Security System for Vibecoded Applications**
 
+> **DirtyHack Fork Notice**  
+> This repository is my “DirtyHack” fork of [SecureVibes](https://github.com/anshumanbh/securevibes). I love the upstream work but don’t have time to craft polished PRs that need manual review. Instead I vibe-code experimental features and quick hacks to push toward fully autonomous agentic workflows so I can “vibe hack” whenever inspiration strikes. Use this fork at your own risk: it may move fast, break often, and diverge from upstream best practices.
+
 SecureVibes uses **Claude's multi-agent architecture** to autonomously find security vulnerabilities in your codebase. Five specialized AI agents (4 required + 1 optional DAST) work together to deliver comprehensive, context-aware security analysis with concrete evidence.
 
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
@@ -58,6 +61,23 @@ securevibes scan /path/to/code --debug
 # The most important part
 # Sit back and relax. Please be patient as the scans might take some time, depending upon the model being used.
 ```
+
+### Local Development & Testing
+
+When hacking on SecureVibes itself, use an isolated virtual environment so dev dependencies (pytest, pytest-asyncio, etc.) don’t touch your system Python:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+
+# Editable install with dev extras (quote path when using zsh)
+pip install -e 'packages/core[dev]'
+
+# Run full suite
+pytest packages/core/tests/
+```
+
+> Tip: forgetting the quotes around `packages/core[dev]` in zsh makes the shell try to glob the brackets, so keep them in place.
 
 ---
 

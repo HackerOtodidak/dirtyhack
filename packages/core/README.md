@@ -40,6 +40,19 @@ securevibes scan /path/to/code --debug
 # Sit back and relax. Please be patient as the scans might take some time, depending upon the model being used.
 ```
 
+### Local Development & Testing
+
+Use a virtual environment plus the dev extras when modifying the core package:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -e 'packages/core[dev]'  # keep quotes for zsh
+pytest packages/core/tests/
+```
+
+This keeps system Python clean and ensures pytest-asyncio and the other tooling are available for the suite.
+
 Get your API key from: https://console.anthropic.com/
 
 ---
