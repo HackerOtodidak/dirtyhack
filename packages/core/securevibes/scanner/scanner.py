@@ -230,7 +230,8 @@ class Scanner:
     def __init__(
         self,
         model: str = "sonnet",
-        debug: bool = False
+        debug: bool = False,
+        mode: str = "whitebox"
     ):
         """
         Initialize streaming scanner.
@@ -243,10 +244,15 @@ class Scanner:
         self.debug = debug
         self.total_cost = 0.0
         self.console = Console()
+        self.mode = mode
         
         # DAST configuration
         self.dast_enabled = False
         self.dast_config = {}
+        self.accounts_path: Optional[str] = None
+        
+        # Pentest configuration (opt-in for whitebox, default in grey/blackbox)
+        self.pentest_enabled = False
     
     def configure_dast(
         self,
@@ -268,6 +274,34 @@ class Scanner:
             "timeout": timeout,
             "accounts_path": accounts_path
         }
+        self.accounts_path = accounts_path
+    
+    def configure_pentest(self, enabled: bool = False, accounts_path: Optional[str] = None):
+        """
+        Configure pentest phase execution for grey/blackbox runs.
+        
+        Args:
+            enabled: Whether to run pentest after threat modeling
+            accounts_path: Optional test accounts for recon/pentest auth
+        """
+        self.pentest_enabled = enabled
+        if accounts_path:
+            self.accounts_path = accounts_path
+
+    def _copy_accounts_file(self, repo: Path):
+        """
+        Copy provided test accounts JSON into .securevibes/DAST_TEST_ACCOUNTS.json
+        so agents (recon/dast/pentest) can use it for authenticated testing.
+        """
+        if not self.accounts_path:
+            return
+        accounts_file = Path(self.accounts_path)
+        if not accounts_file.exists():
+            return
+        securevibes_dir = repo / ".securevibes"
+        securevibes_dir.mkdir(exist_ok=True)
+        target_accounts = securevibes_dir / "DAST_TEST_ACCOUNTS.json"
+        target_accounts.write_text(accounts_file.read_text())
     
     def _setup_dast_skills(self, repo: Path):
         """
@@ -388,14 +422,11 @@ class Scanner:
             os.environ["DAST_ENABLED"] = "true"
             os.environ["DAST_TARGET_URL"] = self.dast_config["target_url"]
             os.environ["DAST_TIMEOUT"] = str(self.dast_config["timeout"])
-            if self.dast_config.get("accounts_path"):
-                accounts_file = Path(self.dast_config["accounts_path"])
-                if accounts_file.exists():
-                    # Copy to .securevibes/ where agent can read it
-                    securevibes_dir = repo / ".securevibes"
-                    target_accounts = securevibes_dir / "DAST_TEST_ACCOUNTS.json"
-                    target_accounts.write_text(accounts_file.read_text())
+            self._copy_accounts_file(repo)
         
+        if subagent == "pentest" and self.pentest_enabled:
+            os.environ["PENTEST_ENABLED"] = "true"
+
         # Run scan with single sub-agent
         return await self._execute_scan(repo, single_subagent=subagent)
     
@@ -464,13 +495,10 @@ class Scanner:
             os.environ["DAST_ENABLED"] = "true"
             os.environ["DAST_TARGET_URL"] = self.dast_config["target_url"]
             os.environ["DAST_TIMEOUT"] = str(self.dast_config["timeout"])
-            if self.dast_config.get("accounts_path"):
-                accounts_file = Path(self.dast_config["accounts_path"])
-                if accounts_file.exists():
-                    # Copy to .securevibes/ where agent can read it
-                    securevibes_dir = repo / ".securevibes"
-                    target_accounts = securevibes_dir / "DAST_TEST_ACCOUNTS.json"
-                    target_accounts.write_text(accounts_file.read_text())
+            self._copy_accounts_file(repo)
+        
+        if "pentest" in subagents_to_run and self.pentest_enabled:
+            os.environ["PENTEST_ENABLED"] = "true"
         
         # Run scan from this sub-agent onwards
         return await self._execute_scan(repo, resume_from=from_subagent)
@@ -494,14 +522,15 @@ class Scanner:
             os.environ["DAST_ENABLED"] = "true"
             os.environ["DAST_TARGET_URL"] = self.dast_config["target_url"]
             os.environ["DAST_TIMEOUT"] = str(self.dast_config["timeout"])
-            
-            if self.dast_config.get("accounts_path"):
-                accounts_file = Path(self.dast_config["accounts_path"])
-                if accounts_file.exists():
-                    # Copy to .securevibes/ where agent can read it
-                    securevibes_dir = repo / ".securevibes"
-                    target_accounts = securevibes_dir / "DAST_TEST_ACCOUNTS.json"
-                    target_accounts.write_text(accounts_file.read_text())
+            self._copy_accounts_file(repo)
+        
+        # Configure pentest environment variable if enabled
+        if self.pentest_enabled:
+            os.environ["PENTEST_ENABLED"] = "true"
+
+        # If accounts were provided (grey/blackbox auth), copy them for recon/pentest even without DAST
+        if self.accounts_path:
+            self._copy_accounts_file(repo)
         
         return await self._execute_scan(repo)
     
@@ -654,8 +683,9 @@ class Scanner:
             }
         )
 
-        # Load orchestration prompt
-        orchestration_prompt = load_prompt("main", category="orchestration")
+        # Load orchestration prompt with mode context
+        orchestration_prompt_template = load_prompt("main", category="orchestration")
+        orchestration_prompt = orchestration_prompt_template.format(mode=self.mode)
 
         # Execute scan with streaming progress
         try:
@@ -842,6 +872,94 @@ class Scanner:
                     style="yellow"
                 )
             return scan_result
+    
+    def _merge_pentest_results(self, scan_result: ScanResult, securevibes_dir: Path) -> ScanResult:
+        """
+        Merge pentest validation data (PENTEST_VALIDATION.json) into scan results.
+        
+        Uses the same schema as DAST_VALIDATION.json.
+        """
+        pentest_file = securevibes_dir / "PENTEST_VALIDATION.json"
+        if not pentest_file.exists():
+            return scan_result
+        
+        try:
+            with open(pentest_file) as f:
+                pentest_data = json.load(f)
+            
+            metadata = pentest_data.get("dast_scan_metadata", {})
+            validations = pentest_data.get("validations", [])
+            if not validations:
+                return scan_result
+            
+            validation_map = {}
+            for validation in validations:
+                vuln_id = validation.get("vulnerability_id")
+                if vuln_id:
+                    validation_map[vuln_id] = validation
+            
+            from securevibes.models.issue import ValidationStatus
+            updated_issues = []
+            validated_count = false_positive_count = unvalidated_count = 0
+            
+            for issue in scan_result.issues:
+                validation = validation_map.get(issue.id)
+                if validation:
+                    status_str = validation.get("validation_status", "UNVALIDATED")
+                    try:
+                        validation_status = ValidationStatus[status_str]
+                    except KeyError:
+                        validation_status = ValidationStatus.UNVALIDATED
+                    
+                    issue.validation_status = validation_status
+                    issue.validated_at = validation.get("tested_at")
+                    issue.exploitability_score = validation.get("exploitability_score")
+                    if validation.get("evidence"):
+                        issue.dast_evidence = validation["evidence"]
+                    elif validation.get("test_steps") or validation.get("reason") or validation.get("notes"):
+                        evidence = {}
+                        if validation.get("test_steps"):
+                            evidence["test_steps"] = validation["test_steps"]
+                        if validation.get("reason"):
+                            evidence["reason"] = validation["reason"]
+                        if validation.get("notes"):
+                            evidence["notes"] = validation["notes"]
+                        issue.dast_evidence = evidence
+                    
+                    if validation_status == ValidationStatus.VALIDATED:
+                        validated_count += 1
+                    elif validation_status == ValidationStatus.FALSE_POSITIVE:
+                        false_positive_count += 1
+                    else:
+                        unvalidated_count += 1
+                
+                updated_issues.append(issue)
+            
+            scan_result.issues = updated_issues
+            
+            total_tested = metadata.get("total_vulnerabilities_tested", len(validations))
+            if total_tested > 0:
+                scan_result.dast_enabled = True
+                scan_result.dast_validation_rate = validated_count / total_tested
+                scan_result.dast_false_positive_rate = false_positive_count / total_tested
+                scan_result.dast_scan_time_seconds = metadata.get("scan_duration_seconds", 0)
+            
+            if self.debug:
+                self.console.print(
+                    f"✅ Merged pentest validations: {validated_count} validated, "
+                    f"{false_positive_count} false positives, {unvalidated_count} unvalidated",
+                    style="green"
+                )
+            
+            return scan_result
+        
+        except (OSError, json.JSONDecodeError) as e:
+            if self.debug:
+                self.console.print(
+                    f"⚠️  Warning: Failed to merge pentest results: {e}",
+                    style="yellow"
+                )
+            return scan_result
 
     def _load_scan_results(
         self,
@@ -905,6 +1023,8 @@ class Scanner:
                     
                     # Merge DAST validation results if available
                     scan_result = self._merge_dast_results(scan_result, securevibes_dir)
+                    # Merge Pentest validation results if available
+                    scan_result = self._merge_pentest_results(scan_result, securevibes_dir)
                     
                     # Regenerate artifacts with merged validation data
                     if scan_result.dast_enabled:
@@ -966,8 +1086,9 @@ class Scanner:
                     total_cost_usd=self.total_cost
                 )
                 
-                # Merge DAST validation results if available
+                # Merge DAST and Pentest validation results if available
                 scan_result = self._merge_dast_results(scan_result, securevibes_dir)
+                scan_result = self._merge_pentest_results(scan_result, securevibes_dir)
                 
                 # Regenerate artifacts with merged validation data
                 if scan_result.dast_enabled:

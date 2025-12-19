@@ -15,7 +15,6 @@ When making changes, AI agent should:
 2. ✅ Stage changes with `git add <files>`
 3. ✅ Generate a commit message following repository style (check `git log --oneline -10`)
 4. ✅ Display the full command: `git commit -m "suggested message"`
-5. 🛑 **STOP HERE** - Wait for manual execution
 
 **I will then:**
 - Review staged files with `git status` (optional)

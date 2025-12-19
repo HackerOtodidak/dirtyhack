@@ -60,6 +60,13 @@ def create_agent_definitions(
         dast_prompt = dast_prompt.replace("{target_url}", dast_target_url)
     
     return {
+        "recon": AgentDefinition(
+            description="Maps attack surface from a target URL/domain with fast recon and scanning",
+            prompt=AGENT_PROMPTS["recon"],
+            tools=["Read", "Write", "Skill", "Bash"],
+            model=config.get_agent_model("recon", cli_override=cli_model)
+        ),
+
         "assessment": AgentDefinition(
             description="Analyzes codebase architecture and creates comprehensive security documentation",
             prompt=AGENT_PROMPTS["assessment"],
@@ -86,6 +93,13 @@ def create_agent_definitions(
             prompt=AGENT_PROMPTS["report_generator"],
             tools=["Read", "Write"],
             model=config.get_agent_model("report_generator", cli_override=cli_model)
+        ),
+
+        "pentest": AgentDefinition(
+            description="Executes tailored pentest cases from recon and threat modeling with evidence collection",
+            prompt=AGENT_PROMPTS["pentest"],
+            tools=["Read", "Write", "Skill", "Bash"],
+            model=config.get_agent_model("pentest", cli_override=cli_model)
         ),
 
         "dast": AgentDefinition(

@@ -35,6 +35,11 @@ class ArtifactStatus:
 
 # Sub-agent artifact dependencies
 SUBAGENT_ARTIFACTS = {
+    "recon": {
+        "creates": "RECON.json",
+        "requires": None,
+        "description": "Recon and attack surface mapping"
+    },
     "assessment": {
         "creates": "SECURITY.md",
         "requires": None,
@@ -55,6 +60,11 @@ SUBAGENT_ARTIFACTS = {
         "requires": "VULNERABILITIES.json",
         "description": "Consolidated scan report"
     },
+    "pentest": {
+        "creates": "VULNERABILITIES.json",
+        "requires": "THREAT_MODEL.json",
+        "description": "Tailored pentest based on recon and threat modeling"
+    },
     "dast": {
         "creates": "DAST_VALIDATION.json",
         "requires": "VULNERABILITIES.json",
@@ -63,7 +73,15 @@ SUBAGENT_ARTIFACTS = {
 }
 
 # Sub-agent execution order
-SUBAGENT_ORDER = ["assessment", "threat-modeling", "code-review", "report-generator", "dast"]
+SUBAGENT_ORDER = [
+    "recon",
+    "assessment",
+    "threat-modeling",
+    "code-review",
+    "pentest",
+    "dast",
+    "report-generator"
+]
 
 
 class SubAgentManager:

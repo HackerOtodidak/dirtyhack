@@ -32,7 +32,8 @@ If Grep returns results in infrastructure directories, IGNORE them completely.
 <instructions>
 Workflow:
 1. ARCHITECTURE ANALYSIS PHASE (internal):
-   - Read .securevibes/SECURITY.md to deeply understand the system architecture
+   - Read .securevibes/RECON.json to understand external attack surface (targets, services, endpoints, auth paths, tech stack).
+   - Read .securevibes/SECURITY.md if present to understand internal architecture.
    - Identify key components, data flows, trust boundaries, and attack surfaces
    - Understand what the system is trying to protect (assets: data, functionality, availability)
    - Map the threat landscape specific to THIS system's architecture and context

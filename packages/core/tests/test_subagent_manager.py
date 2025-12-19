@@ -134,6 +134,14 @@ def test_get_subagent_dependencies_code_review(manager):
     assert deps["requires"] == "THREAT_MODEL.json"
 
 
+def test_get_subagent_dependencies_pentest(manager):
+    """Test dependencies for pentest sub-agent"""
+    deps = manager.get_subagent_dependencies("pentest")
+    
+    assert deps["creates"] == "VULNERABILITIES.json"
+    assert deps["requires"] == "THREAT_MODEL.json"
+
+
 def test_get_subagent_dependencies_dast(manager):
     """Test dependencies for dast sub-agent"""
     deps = manager.get_subagent_dependencies("dast")
@@ -152,21 +160,28 @@ def test_get_resume_subagents_from_assessment(manager):
     """Test resume list from assessment"""
     subagents = manager.get_resume_subagents("assessment")
     
-    assert subagents == ["assessment", "threat-modeling", "code-review", "report-generator", "dast"]
+    assert subagents == [
+        "assessment",
+        "threat-modeling",
+        "code-review",
+        "pentest",
+        "dast",
+        "report-generator"
+    ]
 
 
 def test_get_resume_subagents_from_code_review(manager):
     """Test resume list from code-review"""
     subagents = manager.get_resume_subagents("code-review")
     
-    assert subagents == ["code-review", "report-generator", "dast"]
+    assert subagents == ["code-review", "pentest", "dast", "report-generator"]
 
 
 def test_get_resume_subagents_from_dast(manager):
     """Test resume list from dast"""
     subagents = manager.get_resume_subagents("dast")
     
-    assert subagents == ["dast"]
+    assert subagents == ["dast", "report-generator"]
 
 
 def test_get_resume_subagents_invalid(manager):
@@ -313,12 +328,14 @@ def test_subagent_artifacts_structure():
 
 def test_subagent_order_completeness():
     """Test SUBAGENT_ORDER contains all sub-agents"""
-    assert len(SUBAGENT_ORDER) == 5
+    assert len(SUBAGENT_ORDER) == 7
+    assert "recon" in SUBAGENT_ORDER
     assert "assessment" in SUBAGENT_ORDER
     assert "threat-modeling" in SUBAGENT_ORDER
     assert "code-review" in SUBAGENT_ORDER
     assert "report-generator" in SUBAGENT_ORDER
     assert "dast" in SUBAGENT_ORDER
+    assert "pentest" in SUBAGENT_ORDER
 
 
 def test_scan_results_json_structure(manager, temp_repo):

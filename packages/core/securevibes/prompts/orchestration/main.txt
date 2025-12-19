@@ -1,67 +1,27 @@
-Perform a complete security analysis of this codebase.
+Perform a complete security analysis. MODE: {mode}. Follow the pipeline for the active mode and skip phases not in that pipeline. Respect RUN_ONLY_SUBAGENT and SKIP_SUBAGENTS if set (comma-separated).
 
-EXECUTION MODE CHECK:
-- Check if environment variable RUN_ONLY_SUBAGENT is set
-- If RUN_ONLY_SUBAGENT is set, run ONLY that sub-agent and skip all others
-- Check if environment variable SKIP_SUBAGENTS is set  
-- If SKIP_SUBAGENTS is set (comma-separated list), skip those sub-agents
-- Otherwise, execute all phases sequentially
+PIPELINES:
+- Whitebox: assessment → threat-modeling → code-review → (optional) dast → report-generator
+- Greybox/Blackbox: recon → threat-modeling → pentest → report-generator
 
-Execute these phases SEQUENTIALLY, ONE AT A TIME:
+Execute phases SEQUENTIALLY, ONE AT A TIME. Announce each phase start and completion.
 
-PHASE 1: ASSESSMENT
-- Skip if: SKIP_SUBAGENTS contains "assessment" OR (RUN_ONLY_SUBAGENT is set AND != "assessment")
-- Announce: "Starting Phase 1: Assessment"
-- Use the 'assessment' agent to analyze architecture
-- Creates .securevibes/SECURITY.md
-- Report: "Assessment complete" when done
-- WAIT for completion before proceeding
+WHITEBOX PHASES
+- ASSESSMENT: create .securevibes/SECURITY.md
+- THREAT MODELING: read SECURITY.md; create THREAT_MODEL.json
+- CODE REVIEW: read THREAT_MODEL.json; create VULNERABILITIES.json
+- REPORT GENERATOR: read SECURITY.md, THREAT_MODEL.json, VULNERABILITIES.json; create scan_results.json
+- DAST (conditional DAST_ENABLED=true): read VULNERABILITIES.json; create DAST_VALIDATION.json
 
-PHASE 2: THREAT MODELING
-- Skip if: SKIP_SUBAGENTS contains "threat-modeling" OR (RUN_ONLY_SUBAGENT is set AND != "threat-modeling")
-- Announce: "Starting Phase 2: Threat Modeling"
-- Use the 'threat-modeling' agent to search for threat patterns using STRIDE
-- Reads .securevibes/SECURITY.md
-- Creates .securevibes/THREAT_MODEL.json
-- Report: "Threat modeling complete" when done
-- WAIT for completion before proceeding
+GREYBOX/BLACKBOX PHASES
+- RECON: map attack surface; create RECON.json (machine) and RECON.md (human).
+- THREAT MODELING: read RECON.json (and SECURITY.md if present); create THREAT_MODEL.json with test cases.
+- PENTEST: ALWAYS RUN in grey/blackbox full scans (unless explicitly running a different single sub-agent). Use THREAT_MODEL.json and RECON.json to build tailored test cases. If SECURITY.md exists, use it for architecture/auth context. If DAST_VALIDATION.json exists, reuse prior validation info and avoid duplicate tests. Update/create VULNERABILITIES.json with validated findings (include synthetic file_path for each issue). Write PENTEST_VALIDATION.json using the same schema as DAST_VALIDATION.json (manual validations).
+- REPORT GENERATOR: include recon findings, threat model, pentest data before creating scan_results.json.
 
-PHASE 3: CODE REVIEW
-- Skip if: SKIP_SUBAGENTS contains "code-review" OR (RUN_ONLY_SUBAGENT is set AND != "code-review")
-- Announce: "Starting Phase 3: Code Review"
-- Use the 'code-review' agent to validate threats with evidence
-- Reads .securevibes/THREAT_MODEL.json
-- Creates .securevibes/VULNERABILITIES.json
-- Report: "Code review complete" when done
-- WAIT for completion before proceeding
-
-PHASE 4: REPORT GENERATION
-- Skip if: SKIP_SUBAGENTS contains "report-generator" OR (RUN_ONLY_SUBAGENT is set AND != "report-generator")
-- Announce: "Starting Phase 4: Report Generation"
-- Use the 'report-generator' agent for final report
-- Reads SECURITY.md, THREAT_MODEL.json, VULNERABILITIES.json
-- Creates .securevibes/scan_results.json with ALL vulnerabilities
-- Report: "Report generation complete" when done
-- WAIT for completion before proceeding
-
-PHASE 5: DAST VALIDATION (CONDITIONAL)
-- Skip if: DAST_ENABLED != "true" OR SKIP_SUBAGENTS contains "dast" OR (RUN_ONLY_SUBAGENT is set AND != "dast")
-- Check environment variable DAST_ENABLED
-- If DAST_ENABLED != "true", SKIP this phase entirely
-- If DAST_ENABLED == "true":
-  - Announce: "Starting Phase 5: DAST Validation"
-  - Use the 'dast' agent to validate vulnerabilities via HTTP-based dynamic testing
-  - Reads .securevibes/VULNERABILITIES.json
-  - Creates .securevibes/DAST_VALIDATION.json
-  - Agent may use skills discovered in .claude/skills/dast/
-  - Report: "DAST validation complete" when done
-
-CRITICAL RULES:
-- Execute agents ONE AT A TIME in strict sequential order
-- Explicitly announce each phase before starting
-- WAIT for each phase to complete before starting the next
-- Do NOT delegate work to other agents via Task tool
-- Each agent uses ONLY its assigned tools
-- Phase 5 is OPTIONAL - only run if DAST_ENABLED=true
-
-Keep responses brief - focus on announcing phases, invoking agents, and reporting completion.
+CRITICAL RULES
+- Execute agents ONE AT A TIME in strict order for the active pipeline.
+- WAIT for each phase to complete before proceeding.
+- Do NOT delegate via Task tool.
+- Each agent uses ONLY its assigned tools.
+- Keep responses brief: announce, invoke agent, report completion.

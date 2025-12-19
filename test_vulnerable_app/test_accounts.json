@@ -5,21 +5,24 @@
       "username": "alice",
       "password": "alice123",
       "user_id": "1",
-      "description": "Regular user account for horizontal escalation testing"
+      "description": "Regular user account for horizontal escalation testing",
+      "login_url": "http://localhost:5001/login"
     },
     {
       "role": "user",
       "username": "bob",
       "password": "bob456",
       "user_id": "2",
-      "description": "Second regular user for IDOR/horizontal privilege testing"
+      "description": "Second regular user for IDOR/horizontal privilege testing",
+      "login_url": "http://localhost:5001/login"
     },
     {
       "role": "admin",
       "username": "admin",
       "password": "admin789",
       "user_id": "3",
-      "description": "Admin account for vertical escalation testing"
+      "description": "Admin account for vertical escalation testing",
+      "login_url": "http://localhost:5001/admin"
     }
   ]
 }

@@ -47,6 +47,8 @@ def load_all_agent_prompts() -> Dict[str, str]:
             "code_review": load_prompt("code_review"),
             "report_generator": load_prompt("report_generator"),
             "dast": load_prompt("dast"),
+            "recon": load_prompt("recon"),
+            "pentest": load_prompt("pentest"),
         }
     except FileNotFoundError as e:
         raise RuntimeError(

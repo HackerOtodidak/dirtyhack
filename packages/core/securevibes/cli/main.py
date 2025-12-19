@@ -15,6 +15,7 @@ from rich import box
 from securevibes import __version__
 from securevibes.models.issue import Severity
 from securevibes.scanner.scanner import Scanner
+from securevibes.scanner.subagent_manager import SubAgentManager
 
 console = Console()
 
@@ -41,22 +42,25 @@ def cli():
 @click.option('--no-save', is_flag=True, help='Do not save results to .securevibes/')
 @click.option('--quiet', '-q', is_flag=True, help='Minimal output (errors only)')
 @click.option('--debug', is_flag=True, help='Show verbose diagnostic output')
-@click.option('--dast', is_flag=True, help='Enable DAST validation in full scan')
+@click.option('--dast', is_flag=True, help='Enable DAST validation in the full scan (optional)')
 @click.option('--target-url', type=str, help='Target URL for DAST testing (e.g., http://localhost:3000)')
 @click.option('--dast-timeout', type=int, default=120, help='DAST validation timeout in seconds (default: 120)')
 @click.option('--dast-accounts', type=click.Path(exists=True), help='Path to test accounts JSON file')
+@click.option('--pentest-accounts', type=click.Path(exists=True), help='Path to pentest/greybox accounts JSON file')
 @click.option('--allow-production', is_flag=True, help='Allow DAST testing on production URLs (use with caution!)')
-@click.option('--subagent', type=click.Choice(['assessment', 'threat-modeling', 'code-review', 'report-generator', 'dast']),
+@click.option('--mode', type=click.Choice(['whitebox', 'greybox', 'blackbox']), default='whitebox',
+              help='Execution mode: whitebox (code), greybox/blackbox (target-first recon)')
+@click.option('--subagent', type=click.Choice(['assessment', 'threat-modeling', 'code-review', 'report-generator', 'dast', 'recon', 'pentest']),
               help='Run specific sub-agent only (mutually exclusive with --dast and --resume-from)')
-@click.option('--resume-from', type=click.Choice(['assessment', 'threat-modeling', 'code-review', 'report-generator', 'dast']),
+@click.option('--resume-from', type=click.Choice(['assessment', 'threat-modeling', 'code-review', 'report-generator', 'dast', 'recon', 'pentest']),
               help='Resume scan from specific sub-agent onwards')
 @click.option('--force', is_flag=True, help='Skip confirmation prompts, overwrite existing artifacts')
 @click.option('--skip-checks', is_flag=True, help='Bypass artifact validation checks')
 def scan(path: str, model: str, output: Optional[str], format: str, 
          severity: Optional[str], no_save: bool, quiet: bool, debug: bool,
          dast: bool, target_url: Optional[str], dast_timeout: int, 
-         dast_accounts: Optional[str], allow_production: bool,
-         subagent: Optional[str], resume_from: Optional[str], 
+         dast_accounts: Optional[str], pentest_accounts: Optional[str], allow_production: bool,
+         subagent: Optional[str], resume_from: Optional[str], mode: str,
          force: bool, skip_checks: bool):
     """
     Scan a repository for security vulnerabilities.
@@ -80,6 +84,11 @@ def scan(path: str, model: str, output: Optional[str], format: str,
         if quiet and debug:
             console.print("[yellow]⚠️  Warning: --quiet and --debug are contradictory. Using --debug.[/yellow]")
             quiet = False  # Debug takes precedence
+        
+        # Mode requirements
+        if mode in ("greybox", "blackbox") and not target_url:
+            console.print("[bold red]❌ Error:[/bold red] --target-url is required for greybox/blackbox modes")
+            sys.exit(1)
         
         # Validate mutually exclusive flags
         if subagent and resume_from:
@@ -150,8 +159,8 @@ def scan(path: str, model: str, output: Optional[str], format: str,
         # Run scan (full/single sub-agent/resume mode)
         result = asyncio.run(_run_scan(
             path, model, not no_save, quiet, debug, 
-            dast, target_url, dast_timeout, dast_accounts,
-            subagent, resume_from, force, skip_checks
+            dast, target_url, dast_timeout, dast_accounts, pentest_accounts,
+            subagent, resume_from, force, skip_checks, mode
         ))
         
         # Filter by severity if specified
@@ -272,12 +281,29 @@ async def _run_scan(
     path: str, model: str, save_results: bool, quiet: bool, debug: bool,
     dast: bool = False, target_url: Optional[str] = None, 
     dast_timeout: int = 120, dast_accounts: Optional[str] = None,
+    pentest_accounts: Optional[str] = None,
     subagent: Optional[str] = None, resume_from: Optional[str] = None,
-    force: bool = False, skip_checks: bool = False
+    force: bool = False, skip_checks: bool = False, mode: str = "whitebox"
 ):
     """Run the actual scan with progress indicator"""
 
     repo_path = Path(path).absolute()
+    
+    # Pentest phase only applies to grey/blackbox
+    pentest_enabled = False
+    if subagent == "pentest":
+        pentest_enabled = True
+    elif resume_from and mode in ("greybox", "blackbox"):
+        pentest_enabled = "pentest" in SubAgentManager(repo_path).get_resume_subagents(resume_from)
+    elif mode in ("greybox", "blackbox") and not subagent and not resume_from:
+        pentest_enabled = True
+    
+    if pentest_enabled and not target_url:
+        console.print("[bold red]❌ Error:[/bold red] --target-url is required when pentest is enabled")
+        sys.exit(1)
+    
+    # Accounts preference: pentest accounts first, then DAST accounts
+    accounts_path = pentest_accounts or dast_accounts
     
     # DAST reachability check
     if dast and target_url:
@@ -296,7 +322,7 @@ async def _run_scan(
                 console.print("[green]✓ Target is reachable[/green]")
     
     # Create scanner instance with DAST configuration
-    scanner = Scanner(model=model, debug=debug)
+    scanner = Scanner(model=model, debug=debug, mode=mode)
     
     # Configure DAST if enabled
     if dast:
@@ -305,6 +331,14 @@ async def _run_scan(
             timeout=dast_timeout,
             accounts_path=dast_accounts
         )
+    
+    # Configure pentest (accounts may be provided even if pentest disabled in this run)
+    scanner.configure_pentest(enabled=pentest_enabled, accounts_path=pentest_accounts)
+    
+    # If no pentest accounts but we have dast accounts, make them available for recon/pentest too
+    if not scanner.accounts_path and accounts_path:
+        scanner.accounts_path = accounts_path
+    
     
     # Run in appropriate mode
     if subagent:
