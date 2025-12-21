@@ -37,7 +37,7 @@ SecureVibes uses **Claude's multi-agent architecture** to autonomously find secu
 
 ```bash
 # Install latest DirtyHack fork (bleeding-edge, may be unstable)
-git clone https://github.com/yogi/dirtyhack.git
+git clone https://github.com/hackerotodidak/dirtyhack.git
 cd dirtyhack
 git checkout dirtyhack  # use the active DirtyHack branch
 python -m venv .venv
