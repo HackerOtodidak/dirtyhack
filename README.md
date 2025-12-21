@@ -38,8 +38,19 @@ git clone https://github.com/yogi/dirtyhack.git
 cd dirtyhack
 git checkout dirtyhack  # use the active DirtyHack branch
 python -m venv .venv
+
+# Linux/macOS
 source .venv/bin/activate
+
+# Windows (PowerShell)
+.\.venv\Scripts\Activate.ps1
+
+# Install the core package in editable mode
+# Linux/macOS
 pip install -e packages/core
+
+# Windows (PowerShell)
+pip install -e .\packages\core
 
 # Authenticate (choose one method)
 # Method 1: Session-based (recommended)
@@ -47,10 +58,18 @@ pip install -e packages/core
 claude  # Run interactive CLI, then type: /login
 
 # Method 2: API key
+# Linux/macOS
 export ANTHROPIC_API_KEY="your-api-key-here"  # Get from https://console.anthropic.com/
 
+# Windows (PowerShell, current session)
+$env:ANTHROPIC_API_KEY = "your-api-key-here"
+
 # Scan your project (entrypoint is `dirtyhack` in this fork)
+# Linux/macOS
 ./.venv/bin/dirtyhack scan /path/to/code --debug
+
+# Windows (PowerShell)
+.\.venv\Scripts\dirtyhack scan C:\path\to\code --debug
 
 # The most important part
 # Sit back and relax. Please be patient as the scans might take some time, depending upon the model being used.
@@ -92,10 +111,19 @@ When hacking on SecureVibes itself, use an isolated virtual environment so dev d
 
 ```bash
 python -m venv .venv
+
+# Linux/macOS
 source .venv/bin/activate
 
+# Windows (PowerShell)
+.\.venv\Scripts\Activate.ps1
+
 # Editable install with dev extras (quote path when using zsh)
+# Linux/macOS
 pip install -e 'packages/core[dev]'
+
+# Windows (PowerShell)
+pip install -e ".\packages\core[dev]"
 
 # Run full suite
 pytest packages/core/tests/

@@ -1,17 +1,17 @@
-Perform a complete security analysis. MODE: {mode}. Follow the pipeline for the active mode and skip phases not in that pipeline. Respect RUN_ONLY_SUBAGENT and SKIP_SUBAGENTS if set (comma-separated).
+Perform a complete security analysis. MODE: {mode}. DAST_ENABLED: {dast_enabled}. RUN_ONLY_SUBAGENT: {run_only_subagent}. SKIP_SUBAGENTS: {skip_subagents}. RESUME_FROM_SUBAGENT: {resume_from_subagent}. Follow the pipeline for the active mode and skip phases not in that pipeline. Respect RUN_ONLY_SUBAGENT and SKIP_SUBAGENTS if set (comma-separated).
 
 PIPELINES:
-- Whitebox: assessment → threat-modeling → code-review → (optional) dast → report-generator
+- Whitebox: assessment → threat-modeling → code-review → (DAST if enabled) → report-generator
 - Greybox/Blackbox: recon → threat-modeling → pentest → report-generator
 
 Execute phases SEQUENTIALLY, ONE AT A TIME. Announce each phase start and completion.
 
-WHITEBOX PHASES
+WHITEBOX PHASES (in order)
 - ASSESSMENT: create .securevibes/SECURITY.md
 - THREAT MODELING: read SECURITY.md; create THREAT_MODEL.json
 - CODE REVIEW: read THREAT_MODEL.json; create VULNERABILITIES.json
+- DAST (conditional DAST_ENABLED=true): MUST run if DAST_ENABLED=true. Read VULNERABILITIES.json; create DAST_VALIDATION.json.
 - REPORT GENERATOR: read SECURITY.md, THREAT_MODEL.json, VULNERABILITIES.json; create scan_results.json
-- DAST (conditional DAST_ENABLED=true): read VULNERABILITIES.json; create DAST_VALIDATION.json
 
 GREYBOX/BLACKBOX PHASES
 - RECON: map attack surface; create RECON.json (machine) and RECON.md (human).
@@ -25,3 +25,6 @@ CRITICAL RULES
 - Do NOT delegate via Task tool.
 - Each agent uses ONLY its assigned tools.
 - Keep responses brief: announce, invoke agent, report completion.
+- If DAST_ENABLED=true, you MUST execute the DAST phase in whitebox mode.
+- If RUN_ONLY_SUBAGENT is not "none", you MUST run ONLY that sub-agent and then STOP. Ignore the default pipeline.
+- If SKIP_SUBAGENTS is not "none", you MUST skip those phases entirely.

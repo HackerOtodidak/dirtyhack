@@ -688,7 +688,16 @@ class Scanner:
 
         # Load orchestration prompt with mode context
         orchestration_prompt_template = load_prompt("main", category="orchestration")
-        orchestration_prompt = orchestration_prompt_template.format(mode=self.mode)
+        run_only_subagent = single_subagent or os.environ.get("RUN_ONLY_SUBAGENT") or "none"
+        skip_subagents = os.environ.get("SKIP_SUBAGENTS") or "none"
+        resume_from_subagent = resume_from or os.environ.get("RESUME_FROM_SUBAGENT") or "none"
+        orchestration_prompt = orchestration_prompt_template.format(
+            mode=self.mode,
+            dast_enabled=str(self.dast_enabled).lower(),
+            run_only_subagent=run_only_subagent,
+            skip_subagents=skip_subagents,
+            resume_from_subagent=resume_from_subagent
+        )
 
         # Execute scan with streaming progress
         try:

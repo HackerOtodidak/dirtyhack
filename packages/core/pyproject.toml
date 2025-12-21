@@ -36,6 +36,7 @@ dependencies = [
 
 [project.scripts]
 securevibes = "securevibes.cli.main:cli"
+dirtyhack = "securevibes.cli.main:cli"
 
 [project.optional-dependencies]
 dev = [
