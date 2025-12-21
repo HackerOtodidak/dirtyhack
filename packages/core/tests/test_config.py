@@ -260,3 +260,16 @@ class TestLanguageDetectionIntegration:
         # Should exclude both Python and JS directories
         assert 'venv' in dirs
         assert 'node_modules' in dirs
+
+    def test_detection_ignores_excluded_dirs(self, tmp_path):
+        """Test that excluded dirs don't cause false language detection"""
+        venv_dir = tmp_path / ".venv"
+        venv_dir.mkdir()
+        (venv_dir / "fake.py").touch()
+
+        node_dir = tmp_path / "node_modules"
+        node_dir.mkdir()
+        (node_dir / "fake.js").touch()
+
+        languages = LanguageConfig.detect_languages(tmp_path)
+        assert languages == set()

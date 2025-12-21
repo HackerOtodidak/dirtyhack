@@ -44,20 +44,31 @@ class LanguageConfig:
             Set of detected language names
         """
         languages = set()
+        extensions = cls.get_all_extensions()
+        ext_to_lang = {
+            ext: lang
+            for lang, exts in cls.SUPPORTED_LANGUAGES.items()
+            for ext in exts
+        }
         
         # Sample files from repo (limit to avoid performance impact)
         try:
-            sample_files = list(repo.glob('**/*'))[:sample_size]
-            
-            for file in sample_files:
-                if not file.is_file():
-                    continue
-                    
-                ext = file.suffix.lower()
-                for lang, extensions in cls.SUPPORTED_LANGUAGES.items():
-                    if ext in extensions:
+            excluded_dirs = ScanConfig.get_excluded_dirs()
+            scanned = 0
+            for root, dirs, files in os.walk(repo):
+                dirs[:] = [d for d in dirs if d not in excluded_dirs]
+                for name in files:
+                    if scanned >= sample_size:
+                        return languages
+                    ext = Path(name).suffix.lower()
+                    if ext not in extensions:
+                        continue
+                    scanned += 1
+                    lang = ext_to_lang.get(ext)
+                    if lang:
                         languages.add(lang)
-                        break
+                    if len(languages) == len(cls.SUPPORTED_LANGUAGES):
+                        return languages
         except (OSError, PermissionError):
             pass
         
@@ -342,4 +353,3 @@ class AgentConfig:
 
 # Global configuration instance
 config = AgentConfig()
-

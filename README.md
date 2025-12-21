@@ -5,7 +5,7 @@
 > **DirtyHack Fork Notice**  
 > This repository is my “DirtyHack” fork of [SecureVibes](https://github.com/anshumanbh/securevibes). I love the upstream work but don’t have time to craft polished PRs that need manual review. Instead I vibe-code experimental features and quick hacks to push toward fully autonomous agentic workflows so I can “vibe hack” whenever inspiration strikes. Use this fork at your own risk: it may move fast, break often, and diverge from upstream best practices.
 
-SecureVibes uses **Claude's multi-agent architecture** to autonomously find security vulnerabilities in your codebase. Five specialized AI agents (4 required + 1 optional DAST) work together to deliver comprehensive, context-aware security analysis with concrete evidence.
+SecureVibes uses **Claude's multi-agent architecture** to autonomously find security vulnerabilities in your codebase. Specialized agents cover both code-first (whitebox) and target-first (grey/blackbox) workflows, delivering context-aware security analysis with concrete evidence.
 
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 
@@ -15,9 +15,11 @@ SecureVibes uses **Claude's multi-agent architecture** to autonomously find secu
 
 ### True Agent Architecture
 - **🤖 Autonomous Orchestration**: Claude intelligently coordinates agents
+- **🧭 Recon Agent**: Maps attack surface for target-first scans
 - **📐 Assessment Agent**: Maps your codebase architecture
 - **🎯 Threat Modeling Agent**: Architecture-driven STRIDE threat analysis
 - **🔍 Code Review Agent**: Security thinking methodology to find vulnerabilities
+- **🛠️ Pentest Agent**: Tailored validation for grey/blackbox targets
 - **🧪 DAST Agent**: Dynamic testing with auto-bundled skills
 - **📊 Report Generator**: Compiles comprehensive scan results
 
@@ -31,197 +33,175 @@ SecureVibes uses **Claude's multi-agent architecture** to autonomously find secu
 
 ## 🚀 Quick Start
 
-```bash
+### Install (Linux/macOS)
 
+```bash
 # Install latest DirtyHack fork (bleeding-edge, may be unstable)
 git clone https://github.com/yogi/dirtyhack.git
 cd dirtyhack
 git checkout dirtyhack  # use the active DirtyHack branch
 python -m venv .venv
-
-# Linux/macOS
 source .venv/bin/activate
-
-# Windows (PowerShell)
-.\.venv\Scripts\Activate.ps1
-
-# Install the core package in editable mode
-# Linux/macOS
 pip install -e packages/core
+```
 
-# Windows (PowerShell)
+### Install (Windows PowerShell)
+
+```powershell
+# Install latest DirtyHack fork (bleeding-edge, may be unstable)
+git clone https://github.com/yogi/dirtyhack.git
+cd dirtyhack
+git checkout dirtyhack  # use the active DirtyHack branch
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 pip install -e .\packages\core
+```
 
-# Authenticate (choose one method)
+### Authenticate
+
+```bash
 # Method 1: Session-based (recommended)
 # You could use your Claude subscription here, if you don't want to pay per API requests
 claude  # Run interactive CLI, then type: /login
+```
 
-# Method 2: API key
-# Linux/macOS
+```bash
+# Method 2: API key (Linux/macOS)
 export ANTHROPIC_API_KEY="your-api-key-here"  # Get from https://console.anthropic.com/
+```
 
-# Windows (PowerShell, current session)
+```powershell
+# Method 2: API key (Windows PowerShell, current session)
 $env:ANTHROPIC_API_KEY = "your-api-key-here"
-
-# Scan your project (entrypoint is `dirtyhack` in this fork)
-# Linux/macOS
-./.venv/bin/dirtyhack scan /path/to/code --debug
-
-# Windows (PowerShell)
-.\.venv\Scripts\dirtyhack scan C:\path\to\code --debug
-
-# The most important part
-# Sit back and relax. Please be patient as the scans might take some time, depending upon the model being used.
 ```
 
-### Modes & Targets
-
-- `--mode whitebox` (default): code-first pipeline (assessment → threat-modeling → code-review → optional DAST → report-generator).
-- `--mode greybox`: target-first pipeline (recon → threat-modeling → pentest → report-generator). Use when you have credentials/context; pass `--pentest-accounts` and `--target-url`.
-- `--mode blackbox`: same pipeline as greybox but assume no credentials; only `--target-url` is required (skip `--pentest-accounts`).
-- Pentest runs by default in grey/black; DAST is optional and usually unnecessary unless you want extra HTTP validation. Pentest will also reuse SECURITY.md and DAST_VALIDATION.json if they exist (e.g., after a whitebox run).
-- Auth testing: prefer `--pentest-accounts path/to/accounts.json` for grey/black (copied to `.securevibes/DAST_TEST_ACCOUNTS.json`). For standalone DAST, you can still use `--dast-accounts`. If your app runs on a different port (e.g., 5001), set the `login_url` accordingly.
-
-Examples:
-```bash
-# Whitebox (unchanged)
-./.venv/bin/dirtyhack scan . --dast --target-url http://127.0.0.1:5001
-
-# Greybox target-first with accounts
-./.venv/bin/dirtyhack scan test_vulnerable_app \
-  --mode greybox \
-  --target-url http://127.0.0.1:5001 \
-  --pentest-accounts test_vulnerable_app/test_accounts.json \
-  --force
-
-# Recon only (grey/black)
-./.venv/bin/dirtyhack scan test_vulnerable_app --mode greybox --target-url http://127.0.0.1:5001 --subagent recon
-
-# Pentest only (after threat model exists)
-./.venv/bin/dirtyhack scan test_vulnerable_app --mode greybox --target-url http://127.0.0.1:5001 --subagent pentest
-
-# (Optional) DAST against an existing vuln file (typically whitebox)
-./.venv/bin/dirtyhack scan . --subagent dast --target-url http://127.0.0.1:5001
-```
-
-### Local Development & Testing
-
-When hacking on SecureVibes itself, use an isolated virtual environment so dev dependencies (pytest, pytest-asyncio, etc.) don’t touch your system Python:
+### Run your first scan
 
 ```bash
-python -m venv .venv
-
-# Linux/macOS
-source .venv/bin/activate
-
-# Windows (PowerShell)
-.\.venv\Scripts\Activate.ps1
-
-# Editable install with dev extras (quote path when using zsh)
-# Linux/macOS
-pip install -e 'packages/core[dev]'
-
-# Windows (PowerShell)
-pip install -e ".\packages\core[dev]"
-
-# Run full suite
-pytest packages/core/tests/
+dirtyhack scan /path/to/code --debug
 ```
 
-> Tip: forgetting the quotes around `packages/core[dev]` in zsh makes the shell try to glob the brackets, so keep them in place.
+All commands below assume the repo-local venv is activated so you always run the latest DirtyHack from this repo.
+If you prefer not to activate the venv, replace `dirtyhack` with the full path:
+- Linux/macOS: `./.venv/bin/dirtyhack`
+- Windows PowerShell: `.\.venv\Scripts\dirtyhack`
+
+> Sit back and relax. Scans can take time depending on repo size and model.
 
 ---
 
 ## 🎯 Usage
 
+### Modes & Pipelines
+
+| Mode | Pipeline | Required Flags | When to Use |
+|------|----------|----------------|-------------|
+| whitebox (default) | assessment → threat-modeling → code-review → (optional DAST) → report-generator | none | You have source code |
+| greybox | recon → threat-modeling → pentest → report-generator | `--target-url` (optional `--pentest-accounts`) | You have a target + creds/context |
+| blackbox | recon → threat-modeling → pentest → report-generator | `--target-url` | You only have a target URL |
+
+Pentest runs by default in grey/black. DAST is a standalone validation phase for whitebox artifacts and is optional.
+
 ### Basic Commands
 
 ```bash
-# Full security scan
-./.venv/bin/dirtyhack scan .
-
-# View results
-./.venv/bin/dirtyhack report
+dirtyhack scan .
+dirtyhack report
 ```
 
-### Common Options
-
+Common options:
 ```bash
-# Default: creates .securevibes/scan_report.md (markdown format)
-./.venv/bin/dirtyhack scan .
-
-# Export results as JSON
-./.venv/bin/dirtyhack scan . --format json --output results.json
-
-# Custom markdown report (saved to .securevibes/custom_report.md)
-./.venv/bin/dirtyhack scan . --format markdown --output custom_report.md
-
-# Terminal table output (no file saved)
-./.venv/bin/dirtyhack scan . --format table
-
-# Filter by severity
-./.venv/bin/dirtyhack scan . --severity high
-
-# Use different model
-./.venv/bin/dirtyhack scan . --model haiku
-
-# Verbose debug output (shows agent narration)
-./.venv/bin/dirtyhack scan . --debug
-
-# Quiet mode
-./.venv/bin/dirtyhack scan . --quiet
+dirtyhack scan . --format json --output results.json
+dirtyhack scan . --format markdown --output custom_report.md
+dirtyhack scan . --format table
+dirtyhack scan . --severity high
+dirtyhack scan . --model haiku
+dirtyhack scan . --debug
+dirtyhack scan . --quiet
 ```
 
-### Running Individual Sub-Agents
-SecureVibes breaks down security scanning into sub-agents. You can run or resume them individually:
+Note: `--debug` overrides `--quiet`.
+
+### Full End-to-End Scans
 
 ```bash
-# Assessment (whitebox)
-./.venv/bin/dirtyhack scan . --subagent assessment
+# Whitebox (with optional DAST)
+dirtyhack scan . \
+  --mode whitebox \
+  --target-url http://127.0.0.1:5001 \
+  --dast \
+  --dast-accounts test_vulnerable_app/test_accounts.json \
+  --allow-production \
+  --debug \
+  --force
 
-# Threat modeling (needs SECURITY.md)
-./.venv/bin/dirtyhack scan . --subagent threat-modeling
+# Greybox (target + accounts)
+dirtyhack scan test_vulnerable_app \
+  --mode greybox \
+  --target-url http://127.0.0.1:5001 \
+  --pentest-accounts test_vulnerable_app/test_accounts.json \
+  --allow-production \
+  --debug \
+  --force
 
-# Code review (whitebox; needs THREAT_MODEL.json)
-./.venv/bin/dirtyhack scan . --subagent code-review
-
-# Pentest (grey/black; needs THREAT_MODEL.json, uses RECON.json if present)
-./.venv/bin/dirtyhack scan . --mode greybox --target-url http://127.0.0.1:5001 \
-  --subagent pentest \
-  --pentest-accounts test_vulnerable_app/test_accounts.json
-
-# Recon (grey/black; target required)
-./.venv/bin/dirtyhack scan . --mode greybox --target-url http://127.0.0.1:5001 --subagent recon
-
-# DAST (optional; needs VULNERABILITIES.json)
-./.venv/bin/dirtyhack scan . --subagent dast --target-url http://127.0.0.1:5001 --dast-accounts test_vulnerable_app/test_accounts.json
-
-# Report generator (needs VULNERABILITIES.json)
-./.venv/bin/dirtyhack scan . --subagent report-generator
-
-# Resume flows
-./.venv/bin/dirtyhack scan . --resume-from threat-modeling
-./.venv/bin/dirtyhack scan . --resume-from code-review
-./.venv/bin/dirtyhack scan . --resume-from pentest --mode greybox --target-url http://127.0.0.1:5001
-./.venv/bin/dirtyhack scan . --resume-from dast --dast --target-url http://127.0.0.1:5001
+# Blackbox (target only)
+dirtyhack scan test_vulnerable_app \
+  --mode blackbox \
+  --target-url http://127.0.0.1:5001 \
+  --allow-production \
+  --debug \
+  --force
 ```
 
-**Sub-Agent Dependencies:**
-- `recon` (grey/black) → Creates `RECON.json`
-- `assessment` → Creates `SECURITY.md`
-- `threat-modeling` → Reads `RECON.json` (if present) and/or `SECURITY.md` → Creates `THREAT_MODEL.json`
-- `code-review` (whitebox) → Needs `THREAT_MODEL.json` → Creates `VULNERABILITIES.json`
-- `pentest` (grey/black default) → Needs `THREAT_MODEL.json` (uses RECON.json if present) → Updates/creates `VULNERABILITIES.json`
-- `dast` → Needs `VULNERABILITIES.json` or test cases → Creates `DAST_VALIDATION.json`
-- `report-generator` → Needs `VULNERABILITIES.json` (and includes recon/pentest data if present) → Creates `scan_results.json`
+### Sub-Agents & Resume
 
-**Interactive Workflow:**
-
-When running a sub-agent, SecureVibes checks for existing artifacts:
+| Sub-Agent | Requires | Output |
+|-----------|----------|--------|
+| recon | `--target-url` | `RECON.json`, `RECON.md` |
+| assessment | none | `SECURITY.md` |
+| threat-modeling | `SECURITY.md` or `RECON.json` | `THREAT_MODEL.json` |
+| code-review | `THREAT_MODEL.json` | `VULNERABILITIES.json` |
+| pentest | `THREAT_MODEL.json` (+ `RECON.json` if present) | `VULNERABILITIES.json`, `PENTEST_VALIDATION.json` |
+| dast | `VULNERABILITIES.json` | `DAST_VALIDATION.json` |
+| report-generator | `VULNERABILITIES.json` | `scan_results.json` |
 
 ```bash
-$ ./.venv/bin/dirtyhack scan . --subagent dast --target-url http://localhost:3000
+# Run a single sub-agent
+dirtyhack scan . --subagent assessment
+dirtyhack scan . --subagent threat-modeling
+dirtyhack scan . --subagent code-review
+dirtyhack scan . --subagent report-generator
+
+# Grey/black recon + pentest
+dirtyhack scan . --mode greybox --target-url http://127.0.0.1:5001 --subagent recon
+dirtyhack scan . --mode greybox --target-url http://127.0.0.1:5001 \
+  --subagent pentest --pentest-accounts test_vulnerable_app/test_accounts.json
+
+# Standalone DAST (whitebox artifact)
+dirtyhack scan . --subagent dast --target-url http://127.0.0.1:5001 \
+  --dast-accounts test_vulnerable_app/test_accounts.json
+
+# Resume from a phase
+dirtyhack scan . --resume-from threat-modeling
+dirtyhack scan . --resume-from code-review
+dirtyhack scan . --resume-from pentest --mode greybox --target-url http://127.0.0.1:5001
+dirtyhack scan . --resume-from dast --dast --target-url http://127.0.0.1:5001
+```
+
+### DAST vs Pentest
+
+Pentest is the default validation step for grey/blackbox and can reuse prior whitebox artifacts. DAST is a standalone HTTP validation phase (typically whitebox) that reads `VULNERABILITIES.json`. You usually want one or the other, not both.
+
+### Accounts File
+
+`--pentest-accounts` and `--dast-accounts` must be JSON. They are copied to `.securevibes/DAST_TEST_ACCOUNTS.json` for agent access.
+
+### Interactive Workflow (Example)
+
+When running a sub-agent, DirtyHack checks for existing artifacts:
+
+```bash
+$ dirtyhack scan . --subagent dast --target-url http://localhost:3000
 
 🔍 Checking prerequisites for 'dast' sub-agent...
 ✓ Found: .securevibes/VULNERABILITIES.json (modified: 2h ago, 10 issues)
@@ -236,9 +216,11 @@ Options:
 Choice [1]:
 ```
 
-**Example output:**
+<details>
+<summary>Example output (streaming)</summary>
+
 ```bash
-$ ./.venv/bin/dirtyhack scan . --debug
+$ dirtyhack scan . --debug
 
 🛡️ SecureVibes Security Scanner
 AI-Powered Vulnerability Detection (Streaming Mode)
@@ -317,9 +299,29 @@ AI-Powered Vulnerability Detection (Streaming Mode)
 💾 JSON results: .securevibes/scan_results.json
 ```
 
+</details>
+
 **Learn more:** [Streaming Mode Documentation →](docs/STREAMING_MODE.md)
 
 ---
+
+## 🧰 Local Development & Testing
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -e 'packages/core[dev]'
+pytest packages/core/tests/
+```
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -e ".\packages\core[dev]"
+pytest packages/core/tests/
+```
+
+> Tip: forgetting the quotes around `packages/core[dev]` in zsh makes the shell try to glob the brackets.
 
 ## 🌍 Supported Languages
 
@@ -446,16 +448,16 @@ SecureVibes provides flexible model selection with a **three-tier priority syste
 
 ```bash
 # All agents use haiku (CLI flag)
-./.venv/bin/dirtyhack scan . --model haiku
+dirtyhack scan . --model haiku
 
 # All use haiku, except code-review uses opus (env var overrides CLI)
 export SECUREVIBES_CODE_REVIEW_MODEL=opus
-./.venv/bin/dirtyhack scan . --model haiku
+dirtyhack scan . --model haiku
 
 # Fine-grained control per agent
 export SECUREVIBES_ASSESSMENT_MODEL=haiku        # Fast
 export SECUREVIBES_CODE_REVIEW_MODEL=opus        # Most thorough
-./.venv/bin/dirtyhack scan .  # Other agents use default (sonnet)
+dirtyhack scan .  # Other agents use default (sonnet)
 ```
 
 **Available models:** `haiku` (fast/cheap), `sonnet` (balanced), `opus` (thorough/expensive)
@@ -506,7 +508,7 @@ export SECUREVIBES_ASSESSMENT_MODEL="haiku"
 export SECUREVIBES_THREAT_MODELING_MODEL="haiku"
 export SECUREVIBES_CODE_REVIEW_MODEL="sonnet"
 export SECUREVIBES_MAX_TURNS=30
-./.venv/bin/dirtyhack scan .
+dirtyhack scan .
 ```
 
 **Optimize for Accuracy (Recommended):**
@@ -515,20 +517,27 @@ export SECUREVIBES_MAX_TURNS=30
 export SECUREVIBES_CODE_REVIEW_MODEL="opus"
 export SECUREVIBES_THREAT_MODELING_MODEL="sonnet"
 export SECUREVIBES_MAX_TURNS=75
-./.venv/bin/dirtyhack scan .
+dirtyhack scan .
 ```
 
 ---
 
 ## 🏗️ How It Works
 
-SecureVibes uses a **multi-agent architecture** where Claude autonomously orchestrates 5 specialized agents (4 required + 1 optional DAST):
+SecureVibes uses a **multi-agent architecture** with two primary pipelines:
 
-1. **Assessment Agent** → Analyzes architecture → `SECURITY.md`
-2. **Threat Modeling Agent** → Applies STRIDE → `THREAT_MODEL.json`
-3. **Code Review Agent** → Validates vulnerabilities → `VULNERABILITIES.json`
-4. **Report Generator** → Compiles results → `scan_results.json`
-5. **DAST Agent (Optional)** → Dynamic validation via HTTP → `DAST_VALIDATION.json` (requires `--target-url`)
+**Whitebox (code-first)**
+1. **Assessment Agent** → `SECURITY.md`
+2. **Threat Modeling Agent** → `THREAT_MODEL.json`
+3. **Code Review Agent** → `VULNERABILITIES.json`
+4. **DAST Agent (optional)** → `DAST_VALIDATION.json` (requires `--target-url`)
+5. **Report Generator** → `scan_results.json`
+
+**Greybox/Blackbox (target-first)**
+1. **Recon Agent** → `RECON.json`, `RECON.md`
+2. **Threat Modeling Agent** → `THREAT_MODEL.json`
+3. **Pentest Agent** → `VULNERABILITIES.json`, `PENTEST_VALIDATION.json`
+4. **Report Generator** → `scan_results.json`
 
 **Key Benefits:**
 - ✅ Claude intelligently adapts to your codebase
@@ -598,33 +607,3 @@ Built by [@anshumanbh](https://github.com/anshumanbh)
 - Inspired by traditional SAST tools but reimagined with AI
 
 ---
-# Advanced End-to-End Commands (Streaming Mode)
-
-```bash
-# Whitebox full scan with DAST (streaming, overwrite, allow prod if set)
-./.venv/bin/dirtyhack scan . \
-  --mode whitebox \
-  --target-url http://127.0.0.1:5001 \
-  --dast \
-  --dast-accounts test_vulnerable_app/test_accounts.json \
-  --allow-production \
-  --debug \
-  --force
-
-# Greybox full scan with pentest (accounts)
-./.venv/bin/dirtyhack scan test_vulnerable_app \
-  --mode greybox \
-  --target-url http://127.0.0.1:5001 \
-  --pentest-accounts test_vulnerable_app/test_accounts.json \
-  --allow-production \
-  --debug \
-  --force
-
-# Blackbox full scan (no creds) with pentest
-./.venv/bin/dirtyhack scan test_vulnerable_app \
-  --mode blackbox \
-  --target-url http://127.0.0.1:5001 \
-  --allow-production \
-  --debug \
-  --force
-```
