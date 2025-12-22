@@ -23,8 +23,6 @@ When making changes, AI agent should:
 - Push manually when ready
 
 **AI agent should NEVER:**
-- ❌ Run `git commit` (unless explicitly requested)
-- ❌ Run `git push` (unless explicitly requested)
 - ❌ Commit without showing what's staged first
 
 **Example:**
