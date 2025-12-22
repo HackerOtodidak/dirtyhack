@@ -321,6 +321,36 @@ class TestScannerIntegration:
         # Cost should be tracked
         assert scanner.total_cost == 1.23
 
+    @pytest.mark.asyncio
+    async def test_scan_dast_does_not_configure_sandbox(self, scanner, test_repo):
+        """DAST runs should not enable the SDK sandbox"""
+        scanner.configure_dast(target_url="http://localhost:3000")
+        captured = {}
+
+        class DummyClient:
+            def __init__(self, *args, **kwargs):
+                captured["options"] = kwargs.get("options")
+
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, exc_type, exc, tb):
+                return None
+
+            async def query(self, prompt):
+                return None
+
+            async def receive_messages(self):
+                if False:
+                    yield None
+
+        with patch('securevibes.scanner.scanner.ClaudeSDKClient', DummyClient):
+            with pytest.raises(RuntimeError):
+                await scanner.scan(str(test_repo))
+
+        assert captured["options"] is not None
+        assert getattr(captured["options"], "sandbox", None) is None
+
 
 class TestScannerResultLoading:
     """Test result loading from generated files"""

@@ -203,63 +203,6 @@ class ScanConfig:
         return dirs
 
 
-class DASTConfig:
-    """Configuration for DAST (Dynamic Application Security Testing) behavior"""
-    
-    # Sandbox settings for DAST phase
-    # Provides OS-level isolation for vulnerability validation
-    SANDBOX_SETTINGS = {
-        "enabled": True,
-        "autoAllowBashIfSandboxed": True,  # Auto-approve bash in sandbox
-        "excludedCommands": [],             # No bypass allowed for DAST
-        "allowUnsandboxedCommands": False,  # Strict mode - no sandbox escape
-        "network": {
-            "allowLocalBinding": True,      # Allow binding to local ports for test scripts
-            "allowUnixSockets": [],         # No Docker/DB sockets allowed
-            "allowAllUnixSockets": False,   # Strict socket restrictions
-        },
-        "ignoreViolations": {
-            "file": ["/tmp/*"],             # Allow temp file operations
-            "network": [],                  # No network violation exceptions
-        },
-        "enableWeakerNestedSandbox": False,  # Use full sandbox strength
-    }
-    
-    # Whether to enable sandbox by default for DAST
-    # Can be overridden via SECUREVIBES_DAST_SANDBOX_ENABLED environment variable
-    DEFAULT_SANDBOX_ENABLED = True
-    
-    @classmethod
-    def is_sandbox_enabled(cls) -> bool:
-        """
-        Check if DAST sandbox is enabled.
-        
-        Can be disabled via SECUREVIBES_DAST_SANDBOX_ENABLED=false environment variable.
-        
-        Returns:
-            True if sandbox should be enabled for DAST phase
-        """
-        env_value = os.getenv("SECUREVIBES_DAST_SANDBOX_ENABLED", "").lower()
-        if env_value in ("false", "0", "no", "off"):
-            return False
-        return cls.DEFAULT_SANDBOX_ENABLED
-    
-    @classmethod
-    def get_sandbox_settings(cls) -> Dict:
-        """
-        Get sandbox settings for DAST phase.
-        
-        Returns sandbox settings dict if enabled, None otherwise.
-        This allows conditional sandbox application based on configuration.
-        
-        Returns:
-            Sandbox settings dict or None if disabled
-        """
-        if not cls.is_sandbox_enabled():
-            return None
-        return cls.SANDBOX_SETTINGS.copy()
-
-
 class AgentConfig:
     """Configuration for agent model selection and behavior"""
     

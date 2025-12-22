@@ -174,6 +174,12 @@ For CI/CD or automated testing:
 securevibes scan . --dast --target-url http://staging.example.com --allow-production
 ```
 
+### Sandbox Note
+
+DirtyHack disables the SDK command sandbox for DAST to keep scans reliable on Windows.
+DAST safety is still enforced by hooks: database CLIs are blocked and writes are limited
+to `.securevibes/DAST_VALIDATION.json` (plus `/tmp/*` for ephemeral helpers).
+
 ---
 
 ## Logging Behavior
